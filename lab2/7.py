@@ -52,47 +52,54 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     y = np.zeros_like(y0)
 
     # Array of max errors for each parameter
-    epsilon_arr = y0 * np.full_like(y0, 10 ** err_scale)
-    print(y0)
-    print(epsilon_arr)
+    max_err_scale = np.array([10 ** (np.full_like(y0, err_scale) + pow_10(y0)) for func in f])
+    epsilon_arr = [y0 * np.full_like(y0, 10 ** err_scale)]
 
     i, t = 1, t0
     while t < tmax:
         t = result[i - 1, 0]
         step = abs(result[i, 0] - result[i-1, 0])
-        print(step)
 
         # Construct initial coefficients
         params = np.array([ result[i-1, 1:] for j in range(len(f)) ])
 
         err_too_large = True
         while err_too_large:
+            #print("step: ", step)
             # Two steps of size h
             y = vRK4_step(t, step, params)
             y1 = vRK4_step(t, step, y)
-            print("y1", y1)
 
             # One step of size 2h
             y2 = vRK4_step(t, 2 * step, params)
 
+            diff = np.abs(y2 - y1)
+            maximum = np.maximum(np.abs(y1), np.abs(y2))
+            max_err = 10 ** (np.full_like(maximum, err_scale) + pow_10(maximum))
+            #print("max_err", max_err)
+
             # Check error is within tolerance
-            err = (0.03333333333333) * np.abs(y1 - y2)
-            print("err", err)
-            print("epsilon_arr", epsilon_arr)
-            print(np.greater(err, epsilon_arr))
-            err_too_small = np.any(np.less(err, 0.01 * epsilon_arr))
-            err_too_large = np.any(np.greater(err, epsilon_arr))
+            err = (0.03333333333333) * diff
+            #print("err", err)
+            #print("err", err)
+            #print(np.greater(err, epsilon_arr))
+            err_too_small = np.any(np.less(err, 0.0001 * max_err))
+            err_too_large = np.any(np.greater(err, max_err))
+            #print("err_too_small", np.less(err, 0.01 * max_err))
+            #print("err_too_large", np.greater(err, max_err))
 
             # Adjust step size
             if err_too_large:
                 step /= 2
-            elif err_too_small:
+                #print(f"Step shrunk, {step * 2} -> {step}")
+            elif err_too_small and ~np.any(np.greater(100 * err, max_err)):
                 step *= 2
+                print(f"Step increased, {step / 2} -> {step}")
 
         # Check result array size & adjust if needed
         # Current row = i
         required_rows = int(i + np.floor(abs(tmax - t) / step))
-        print(required_rows)
+        #print(required_rows)
         
         # Total rows in result = result_shape[0]
         # Too few rows:
@@ -109,6 +116,10 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
         
         # Write result
         result[i, 1:] = np.diag(y)
+        #print(np.diag(y))
+        i += 1
+
+    print(f"{i} steps taken.")
 
     # if i < total rows, shrink result to required size
     if i < result_shape[0]:
@@ -147,7 +158,7 @@ f = [dX, dV_X, dY, dV_Y]
 y0 = [5.2e12, 0, 0, 2.775e10]
 
 start = time.time()
-model = vRK4(f, y0, 0, 300, 1)
+model = vRK4(f, y0, 0, 300, 0.01, -7)
 print(f"Model took: {time.time() - start}s.")
 
 t = model[:, 0]
