@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 
 def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     if err_scale >= 0:
@@ -118,83 +117,41 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
 
     return result
 
-s_year = 3.1536e7
+# Assumes that
+def shooting_method(f, initial_values, t0, tmax, err_scale=-4, coeffs=None, plot=False):
+    assert( np.shape(f) == np.shape(initial_values) )
 
-G = 6.6743e-11 # m^3 kg^-1 s^-2
-G_year = G * s_year**2
-M = 1.989e30   # kg
-GM = G * M
-GM_year = G_year * M
+    if ( err_scale >= 0 ):
+        raise RuntimeError(f"err_scale ({err_scale}) must < 0")
 
-def dX(t, r):
-    x, vx, y, vy = r
-    return [vx, vx,
-            y, vy]
-def dV_X(t, r):
-    x, vx, y, vy = r
-    return [x, -(GM_year * x) / pow(x**2 + y**2, 1.5),
-            y, vy]
-def dY(t, r):
-    x, vx, y, vy = r
-    return [x, vx,
-            vy, vy]
-def dV_Y(t, r):
-    x, vx, y, vy = r
-    return [x, vx,
-            y, -(GM_year * y) / pow(x**2 + y**2, 1.5)]
+    def calculate_endpoint(IVs):
+        vals = vRK4(f, IVs, t0, tmax, err_scale=err_scale)
+        return vals[-1, 1:]
 
-f = [dX, dV_X, dY, dV_Y]
-# 2.775e10 m/year
-y0 = [5.2e12, 0, 0, 2.775e10]
+    def caller(t, param_arr):
+        return np.array([func(t, [*p, *c]) for func, p, c in zip(f, param_arr, coeffs)])
 
-start = time.time()
-model = vRK4(f, y0, 0, 300, 0.01, -7)
-print(f"Model took: {time.time() - start}s.")
+    def eval_err():
+        return
 
-t = model[:, 0]
-x = model[:, 1] / 5.2e12
-vx = model[:, 2]
-y = model[:, 3] / 5.2e12
-vy = model[:, 4]
+    def secant(x0, x1, min_err):
+        err =
+        while err > min_err:
 
+        return
 
-# Plotting
+    
 
-fig = plt.figure(figsize=(10,10))
-ax1 = fig.add_subplot(421)
-ax2 = fig.add_subplot(422)
-ax3 = fig.add_subplot(423)
-ax4 = fig.add_subplot(424)
-ax5 = fig.add_subplot(425)
-ax6 = fig.add_subplot(426)
+    while eval_err() is False:
 
-ax1.plot(t, x)
-ax1.set_xlabel("t")
-ax1.set_ylabel("x")
+    return
 
-ax2.plot(t, vx)
-ax2.set_xlabel("t")
-ax2.set_ylabel("vx")
+g = 9.80665 # ms^-2
 
-ax3.plot(t, y)
-ax3.set_xlabel("t")
-ax3.set_ylabel("y")
+def dz(t, r):
+    z, v = r
+    return np.array([v, v])
+def dv(t, r):
+    z, v = r
+    return np.array([z, -g])
 
-ax4.plot(t, vy)
-ax4.set_xlabel("t")
-ax4.set_ylabel("vy")
-
-ax5.plot(x, y)
-ax5.set_xlabel("x")
-ax5.set_ylabel("y")
-ax5.axhline(0, c='k', ls='--', linewidth=1.2)
-ax5.axvline(0, c='k', ls='--', linewidth=1.2)
-
-ax6.plot(vx, vy)
-ax6.set_xlabel("vx")
-ax6.set_ylabel("vy")
-
-plt.tight_layout()
-fig.savefig(fname="7")
-
-plt.show()
