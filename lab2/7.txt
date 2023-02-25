@@ -103,10 +103,8 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
             # Adjust step size
             if err_too_large:
                 step /= 2
-                print(f"{t} - Step size changed: {step * 2} -> {step}")
             elif err_too_small and ~np.any(np.greater(100 * err, max_err)):
                 step *= 2
-                print(f"{t} - Step size changed: {step / 2} -> {step}")
 
         # Check result array size & adjust if needed
         # Current row = i
@@ -128,7 +126,7 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
         # Write result
         result[i, 1:] = np.diag(y)
         i += 1
-        t = result[i - 1, 0]
+
 
     # if i < total rows, shrink result to required size
     if i < result_shape[0]:
