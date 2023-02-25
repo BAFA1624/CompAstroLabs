@@ -124,11 +124,11 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
 
         # Calculate next time value from step
         result[i, 0] = t + step
+        t = result[i, 0]
         
         # Write result
         result[i, 1:] = np.diag(y)
         i += 1
-        t = result[i - 1, 0]
 
     # if i < total rows, shrink result to required size
     if i < result_shape[0]:
