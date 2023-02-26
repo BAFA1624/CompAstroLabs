@@ -55,7 +55,6 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     # Result has the structure: time, parameters for each respective y0 value.
     result[0, 1:] = y0 
     result[0, 0] = t0
-    result[1, 0] = t0 + init_step
 
     # Initialise arrays for RK4 method
     k1 = np.zeros_like(y0)
@@ -68,13 +67,17 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     max_err_scale = np.array([10 ** (np.full_like(y0, err_scale) + pow_10(y0)) for func in f])
     epsilon_arr = [y0 * np.full_like(y0, 10 ** err_scale)]
 
+    # t0
+    # t1 - step = result[i] - result[i - 1]
+    #
+
     # The current time step value is results[i - 1, 0]
     # The next t value is set to results[i, 0] when the step size is determined.
+    step = init_step
     i, t = 1, t0
     while t < tmax:
         # Current time step
         t = result[i - 1, 0]
-        step = abs(result[i, 0] - result[i-1, 0])
 
         # Construct initial coefficients
         params = np.array([ result[i-1, 1:] for j in range(len(f)) ])
@@ -103,28 +106,20 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
             # Adjust step size
             if err_too_large:
                 step /= 2
-                print(f"{t} - Step size changed: {step * 2} -> {step}")
+                #print(f"{t} - Step size changed: {step * 2} -> {step}")
             elif err_too_small and ~np.any(np.greater(100 * err, max_err)):
                 step *= 2
-                print(f"{t} - Step size changed: {step / 2} -> {step}")
+                #print(f"{t} - Step size changed: {step / 2} -> {step}")
 
-        # Check result array size & adjust if needed
-        # Current row = i
-        required_rows = int(i + np.floor(abs(tmax - t) / step))
         
         # Total rows in result = result_shape[0]
-        # Too few rows:
-        #   Expand by 2 * (predicted rows - total rows)
-        # Too many rows:
-        #   If 2 * predicted rows < total rows:
-        #     Shrink to predicted rows
-        if required_rows > result_shape[0] or required_rows < result_shape[0]:
-            result = np.resize(result, (required_rows, result_shape[1]))
+        # If there's insufficient rows in result, expand
+        if i == np.shape(result)[0]:
+            result = np.resize(result, (int(result_shape[0] * 1.2), result_shape[1]))
             result_shape = np.shape(result)
 
         # Calculate next time value from step
         result[i, 0] = t + step
-        t = result[i, 0]
         
         # Write result
         result[i, 1:] = np.diag(y)
@@ -134,6 +129,8 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     if i < result_shape[0]:
         required_rows = int(i + np.floor(abs(tmax - t) / step))
         result = np.resize(result, (required_rows, result_shape[1]))
+    
+    print(np.shape(result))
 
     return result
 
@@ -171,7 +168,7 @@ f = [dX, dV_X, dY, dV_Y]
 y0 = [5.2e12, 0, 0, 2.775e10]
 
 start = time.time()
-model = vRK4(f, y0, 0, 100, 0.01, -8)
+model = vRK4(f, y0, 0, 100, 0.01, -9)
 print(f"Model took: {time.time() - start}s.")
 
 t = model[:, 0]
