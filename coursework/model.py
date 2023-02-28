@@ -1,7 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import time
 
+# Variantional time-step, vectorised, 4th-order Runge-Kutta Method
 # Arguments:
 # - f: Array of functions for each equation, e.g. if you have set of coupled eqns.
 #      Functions are of the form f(t, r, [additional coefficients])
@@ -13,7 +12,7 @@ import time
 #              e.g. if err_scale = -6 & the most recent calcualted value is 1.3x10^10,
 #                   the max error would be 1.3x10^4.
 # - coeffs: parameter which allows non-variable coefficients to be passed to functions.
-def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
+def vec_vstep_RK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     if err_scale >= 0:
         raise RuntimeError(f"err_scale ({err_scale}) must < 0")
     
@@ -134,87 +133,31 @@ def vRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
 
     return result
 
-# Constants
-s_year = 3.1536e7
-G = 6.6743e-11 # m^3 kg^-1 s^-2
-G_year = G * s_year**2
-M = 1.989e30   # kg
-GM = G * M
-GM_year = G_year * M
+# Shooting Method
+def shooting(f, y0, t0, tmax, N, coeffs=None):
+    return
 
-# dX/dt
-def dX(t, r):
-    x, vx, y, vy = r
-    return [vx, vx,
-            y, vy]
-# dV_x/dt
-def dV_X(t, r):
-    x, vx, y, vy = r
-    return [x, -(GM_year * x) / pow(x**2 + y**2, 1.5),
-            y, vy]
-# dY/dt
-def dY(t, r):
-    x, vx, y, vy = r
-    return [x, vx,
-            vy, vy]
-# dV_y/dt
-def dV_Y(t, r):
-    x, vx, y, vy = r
-    return [x, vx,
-            y, -(GM_year * y) / pow(x**2 + y**2, 1.5)]
+# Leap-Frog Method
+def leapfrog(f, y0, t0, tmax, N, coeffs=None):
+    return
 
-f = [dX, dV_X, dY, dV_Y]
-# 2.775e10 m/year
-y0 = [5.2e12, 0, 0, 2.775e10]
+# def vvRK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
+# Verlet Method
+def vec_fstep_verlet(f, y0, t0, tmax, N, coeffs=None):
+    assert( np.shape(f) == np.shape(y0) )
+    assert( np.shape(f) == np.shape(coeffs)[0] )
+    assert( np.shape(y0)[0] == np.shape(coeffs)[1] )
 
-start = time.time()
-model = vRK4(f, y0, 0, 100, 0.01, -6)
-print(f"Model took: {time.time() - start}s.")
+    step = ( tmax - t0 ) / ( N - 1 )
 
-t = model[:, 0]
-x = model[:, 1] / 5.2e12
-vx = model[:, 2]
-y = model[:, 3] / 5.2e12
-vy = model[:, 4]
+    # Initialise result array.
+    result_shape = (N, np.shape(y0)[0] + 1)
+    result = np.zeros_like(result_shape, dtype=np.float64)
+    result[0, :] = [t, *y0]
 
+    for i in range(1, N):
 
-# Plotting
+    return result
 
-fig = plt.figure(figsize=(10,10))
-ax1 = fig.add_subplot(421)
-ax2 = fig.add_subplot(422)
-ax3 = fig.add_subplot(423)
-ax4 = fig.add_subplot(424)
-ax5 = fig.add_subplot(425)
-ax6 = fig.add_subplot(426)
+# Yoshida Method
 
-ax1.plot(t, x)
-ax1.set_xlabel("t")
-ax1.set_ylabel("x")
-
-ax2.plot(t, vx)
-ax2.set_xlabel("t")
-ax2.set_ylabel("vx")
-
-ax3.plot(t, y)
-ax3.set_xlabel("t")
-ax3.set_ylabel("y")
-
-ax4.plot(t, vy)
-ax4.set_xlabel("t")
-ax4.set_ylabel("vy")
-
-ax5.plot(x, y)
-ax5.set_xlabel("x")
-ax5.set_ylabel("y")
-ax5.axhline(0, c='k', ls='--', linewidth=1.2)
-ax5.axvline(0, c='k', ls='--', linewidth=1.2)
-
-ax6.plot(vx, vy)
-ax6.set_xlabel("vx")
-ax6.set_ylabel("vy")
-
-plt.tight_layout()
-fig.savefig(fname="7")
-
-plt.show()
