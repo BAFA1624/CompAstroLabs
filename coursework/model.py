@@ -1,6 +1,6 @@
 import numpy as np
 
-# Variantional time-step, vectorised, 4th-order Runge-Kutta Method
+# Variational time-step, vectorised, 4th-order Runge-Kutta Method
 # Arguments:
 # - f: Array of functions for each equation, e.g. if you have set of coupled eqns.
 #      Functions are of the form f(t, r, [additional coefficients])
@@ -31,11 +31,12 @@ def vec_vstep_RK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
         return np.array([func(t, [*p, *c]) for func, p, c in zip(f, p_arr, coeffs)])
     # Process one RK4 step
     def vRK4_step(t, h, y_c):
-        k1 = h * caller(t + h, y_c)
-        k2 = h * caller(t + h/2, y_c + k1/2)
-        k3 = h * caller(t + h/2, y_c + k2/2)
-        k4 = h * caller(t, y_c + k3)
-        return y_c + (0.166666666) * (k1 + 2*k2 + 3*k3 + k4)
+        k1 = np.array([ h * func(t, y_c) for func in f ])
+        k2 = np.array([ h * func(t + (0.5 * h), y_c + (0.5 * k1)) for func in f ])
+        k3 = np.array([ h * func(t + (0.5 * h), y_c + (0.5 * k2)) for func in f ])
+        k4 = np.array([ h * func(t + h, y_c + k3) for func in f ])
+        result = np.array(y_c + (1/6) * (k1 + 2*k2 + 2*k3 + k4))
+        return result
     # Get array of closest powers of 10 for items in the input.
     def pow_10(x):
         result = np.zeros(x.shape)
@@ -56,30 +57,24 @@ def vec_vstep_RK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
     result[0, 0] = t0
 
     # Initialise arrays for RK4 method
-    k1 = np.zeros_like(y0)
-    k2 = np.zeros_like(y0)
-    k3 = np.zeros_like(y0)
-    k4 = np.zeros_like(y0)
     y = np.zeros_like(y0)
 
     # Array of max errors for each parameter
     max_err_scale = np.array([10 ** (np.full_like(y0, err_scale) + pow_10(y0)) for func in f])
     epsilon_arr = [y0 * np.full_like(y0, 10 ** err_scale)]
 
-    # t0
-    # t1 - step = result[i] - result[i - 1]
-    #
-
     # The current time step value is results[i - 1, 0]
     # The next t value is set to results[i, 0] when the step size is determined.
     step = init_step
     i, t = 1, t0
     while t < tmax:
+        #if i == 2:
+        #    exit()
         # Current time step
         t = result[i - 1, 0]
 
         # Construct initial coefficients
-        params = np.array([ result[i-1, 1:] for j in range(len(f)) ])
+        params = np.array( result[i-1, 1:] )
 
         # Evaluate if error in step is too large, adjust step accordingly.
         err_too_large = True
@@ -105,11 +100,8 @@ def vec_vstep_RK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
             # Adjust step size
             if err_too_large:
                 step /= 2
-                #print(f"{t} - Step size changed: {step * 2} -> {step}")
             elif err_too_small and ~np.any(np.greater(100 * err, max_err)):
                 step *= 2
-                #print(f"{t} - Step size changed: {step / 2} -> {step}")
-
         
         # Total rows in result = result_shape[0]
         # If there's insufficient rows in result, expand
@@ -121,7 +113,7 @@ def vec_vstep_RK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
         result[i, 0] = t + step
         
         # Write result
-        result[i, 1:] = np.diag(y)
+        result[i, 1:] = y
         i += 1
 
     # if i < total rows, shrink result to required size
@@ -129,8 +121,6 @@ def vec_vstep_RK4(f, y0, t0, tmax, init_step=1, err_scale=-6, coeffs=None):
         required_rows = int(i + np.floor(abs(tmax - t) / step))
         result = np.resize(result, (required_rows, result_shape[1]))
     
-    print(np.shape(result))
-
     return result
 
 # Shooting Method
@@ -156,6 +146,7 @@ def vec_fstep_verlet(f, y0, t0, tmax, N, coeffs=None):
     result[0, :] = [t, *y0]
 
     for i in range(1, N):
+        continue
 
     return result
 

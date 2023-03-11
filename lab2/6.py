@@ -44,8 +44,8 @@ def vRK4(f, y0, x1, xN, N, coeffs=None, t_func=None):
         params = np.array([ result[i-1, 1:] for j in range(len(f)) ])
 
         k1 = step * caller(f, t, params, coeffs)
-        k2 = step * caller(f, t + step/2, params + k1/2, coeffs)
-        k3 = step * caller(f, t + step/2, params + k2/2, coeffs)
+        k2 = step * caller(f, t + (step/2), params + (k1/2), coeffs)
+        k3 = step * caller(f, t + (step/2), params + (k2/2), coeffs)
         k4 = step * caller(f, t + step, params + k3, coeffs)
 
         y = params + (0.166666666) * (k1 + 2*k2 + 2*k3 + k4)
@@ -84,7 +84,7 @@ f = [dX, dV_X, dY, dV_Y]
 y0 = [5.2e12, 0, 0, 2.775e10]
 
 start = time.time()
-model = vRK4(f, y0, 0, 300, 1000000)
+model = vRK4(f, y0, 0, 100, 1000000)
 print(f"Model took: {time.time() - start}s.")
 
 t = model[:, 0]
