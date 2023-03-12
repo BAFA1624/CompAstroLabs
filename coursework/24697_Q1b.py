@@ -121,14 +121,14 @@ r = [5.2e12, 0, 0, 2.775e10]
 print("Calculating err_scale=0...")
 start=time.time()
 t_0, vals_0 = vRK4(f, r, 0, 80, err_scale=0)
-print("Done. ({time.time()-start:.3f}s)")
+print(f"Done. ({time.time()-start:.3f}s)")
 print("Calculating err_scale=-3...")
 start=time.time()
 t_milli, vals_milli = vRK4(f, r, 0, 80, err_scale=-3)
-print("Done. ({time.time()-start:.3f}s)")
+print(f"Done. ({time.time()-start:.3f}s)")
 print("Calculating err_scale=-6...")
 t_micro, vals_micro = vRK4(f, r, 0, 80, err_scale=-6)
-print("Done. ({time.time()-start:.3f}s)")
+print(f"Done. ({time.time()-start:.3f}s)")
 
 print("\n")
 
