@@ -240,8 +240,6 @@ epsilon_UD_f( const distr * const restrict d ) {
                  / ( ( 0.1 * d->N ) * ( 0.1 * d->N ) ) );
 }
 
-
-
 float
 norm_sin_2( const float f ) {
     const float t = sin( f );
