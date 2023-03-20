@@ -48,14 +48,19 @@ MSG_f( const int64_t s, const bool set_seed ) {
 typedef float ( *p_func )( const float );
 
 int
-plot( const char * const restrict pre_cmds[], const size_t N_cmds,
-      const float * const restrict x, const float * const restrict y,
-      const size_t N ) {
+plot( const char * const fname, const char * const restrict pre_cmds[],
+      const size_t       N_cmds, const float * const restrict x,
+      const float * const restrict y, const size_t N ) {
     FILE * gnu_pipe = popen( "gnuplot -persist", "w" );
     if ( !gnu_pipe ) {
         printf( "Failed to open gnuplot pipe.\n" );
         return -1;
     }
+
+    fprintf( gnu_pipe,
+             "set terminal png size 1200,900 enhanced font 'Times New "
+             "Roman,14'\n" );
+    fprintf( gnu_pipe, "set output '%s'\n", fname );
 
     if ( N_cmds != 0 && pre_cmds != NULL ) {
         for ( size_t i = 0; i < N_cmds; ++i ) {
@@ -71,7 +76,7 @@ plot( const char * const restrict pre_cmds[], const size_t N_cmds,
         }
         fprintf( gnu_pipe, "e\n" );
 
-        fflush( gnu_pipe );
+        // fflush( gnu_pipe );
     }
 
     pclose( gnu_pipe );
@@ -170,13 +175,14 @@ rejection_method( const p_func p, const int64_t s, const float dmin,
     }
 
     printf( "TESTS:\n" );
+    printf( "d_size = %lf, r_size = %lf\n", d_size, r_size );
     float    sum = 0;
     uint64_t sum2 = 0;
     for ( uint64_t i = 0; i < M; ++i ) {
-        sum += bin_count[i] * dx;
+        sum += ( bin_count[i] / ( dx * N ) ) * dx;
         sum2 += bin_count[i];
     }
-    printf( "sum y_i * dx_i: %f\n", ( sum * M ) / ( dx * N ) );
+    printf( "sum y_i * dx_i: %f\n", ( sum ) );
     printf( "sum N: %llu\n", sum2 );
 
     distr d = { .dx = dx,
@@ -205,6 +211,9 @@ weighing_method( const p_func p, const int64_t s, const float dmin,
 
     const float d_size = dmax - dmin;
     const float r_size = rmax - rmin;
+
+    distr result = { 0 };
+    return result;
 }
 
 distr
@@ -230,7 +239,7 @@ float
 UD_f( const distr * const restrict d, const float x ) {
     const float xval = ( x - d->d_min ) / ( d->d_max - d->d_min );
     return d->bin_count[( uint64_t ) ( xval / d->dx )] * d->M
-           / ( ( float ) d->N );
+           / ( ( d->d_max - d->d_min ) * ( float ) d->N );
 }
 
 float
@@ -240,18 +249,21 @@ epsilon_UD_f( const distr * const restrict d ) {
                  / ( ( 0.1 * d->N ) * ( 0.1 * d->N ) ) );
 }
 
+// Expect peak of 2/pi
 float
 norm_sin_2( const float f ) {
     const float t = sin( f );
     return M_2_PI * t * t;
 }
 
+// Expect peak of 2/pi
 float
 norm_sin_2x( const float f ) {
     const float t = sin( 2 * f );
     return M_1_PI * t * t;
 }
 
+// Expect peak of 8/(3*pi)
 float
 norm_sin_4( const float f ) {
     return ( 8 / ( 3 * M_PI ) ) * pow( sin( f ), 4 );
@@ -317,8 +329,8 @@ main() {
 
     for ( size_t i = 0; i < n_bins; ++i ) { yvals[i] = UD_f( &d1, xvals[i] ); }
 
-    const char * cmds[] = { "set title 'distr1.'" };
-    plot( cmds, 1, xvals, yvals, n_bins );
+    const char * cmds[] = { "set format '%g'", "set title '$\\sin(\\theta)$'" };
+    plot( "distr1.png", cmds, 2, xvals, yvals, n_bins );
 
     dmax = M_PI;
     rmax = 8 / ( 3 * M_PI );
@@ -332,7 +344,7 @@ main() {
     for ( size_t i = 0; i < n_bins; ++i ) { yvals[i] = UD_f( &d2, xvals[i] ); }
 
     cmds[0] = "set title 'distr2.'";
-    plot( cmds, 1, xvals, yvals, n_bins );
+    plot( "distr2.png", cmds, 1, xvals, yvals, n_bins );
 
     free( yvals );
     delete_distr( &d1 );
