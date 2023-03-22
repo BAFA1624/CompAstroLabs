@@ -59,7 +59,7 @@ fig.savefig("expected_probability")
 plt.clf()
 
 x, y = [], []
-with open("data1.csv", "r") as file:
+with open("data2.csv", "r") as file:
     lines = file.readlines()
     for line in lines:
         vals = [np.float64(s) for s in line.strip().split(',')]
@@ -69,11 +69,12 @@ with open("data1.csv", "r") as file:
     y = np.array(y)
 
 
-def p1(x): return (0.375)*(1+x**2)
-def p2(x): return (2/np.pi)*(np.sin(x)**2)
+def p1(x): return (2/np.pi)*(np.sin(x)**2)
+def p2(x): return (0.375)*(1+x**2)
 def p3(x): return (8/(3*np.pi))*(np.sin(x)**4)
 
 
-plt.plot(x, y, 'ko', ls='none', markersize=1)
-plt.plot(x, p2(x), 'r--')
+plt.plot(x, y, 'ko', ls='none', markersize=1, label="Distribution")
+plt.plot(x, p2(x), 'r--', label="Model")
+plt.legend()
 plt.show()

@@ -128,6 +128,13 @@ F
 distribution<F>::transform_nonweighted( const F x ) const noexcept {
     const F dx{ 1 / static_cast<F>( m_M ) };
     const F xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
+
+    std::cout << "transform_nonweighted (const F " << x << " ) -> F "
+              << ( m_bin_count[static_cast<std::uint64_t>( xval / dx )] * m_M
+                   / ( ( m_dmax - m_dmin ) * static_cast<F>( m_N ) ) )
+                     + m_rmin
+              << std::endl;
+
     return ( m_bin_count[static_cast<std::uint64_t>( xval / dx )] * m_M
              / ( ( m_dmax - m_dmin ) * static_cast<F>( m_N ) ) )
            + m_rmin;
@@ -138,11 +145,12 @@ F
 distribution<F>::transform_weighted( const F x ) const noexcept {
     const F    xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
     const auto i{ static_cast<std::uint64_t>( xval * m_M ) };
-    std::cout << "transform_nonweighted(" << x
-              << "): " << transform_nonweighted( x ) << ", m_weights[" << i
-              << "]: " << m_weights[i] << std::endl;
+    const F p_flat{ m_bin_count[i] * m_M / ( m_rmax * static_cast<F>( m_N ) ) };
 
-    return transform_nonweighted( x ) * m_weights[i];
+    std::cout << "transform_weighted (const F " << x << " ) -> F "
+              << p_flat * m_weights[i] << std::endl;
+
+    return p_flat * m_weights[i];
 }
 
 template <std::floating_point F>
@@ -162,24 +170,28 @@ distribution<F>::gen_distribution( const distr_type    type,
     /* Bin size of distribution to generate
        Distribution is treated as having domain 0 <= x <= 1
        until a new point x is transformed through the distribution. */
-    const F dx{ 1 / static_cast<F>( m_M ) };
     const F d_size{ m_dmax - m_dmin };
     const F r_size{ m_rmax - m_rmin };
 
     switch ( m_type ) {
     case distr_type::flat: {
         for ( std::uint64_t i{ 0 }; i < m_N; ++i ) {
-            m_bin_count[static_cast<std::uint64_t>( random_sample() / dx )]++;
+            m_bin_count[static_cast<std::uint64_t>(
+                random_sample() * static_cast<F>( m_M ) )]++;
         }
     } break;
     case distr_type::rejection: {
-        F x{ 0 }, y{ 0 };
-        do {
-            x = d_size * random_sample() + m_dmin;
-            y = r_size * random_sample() + m_rmin;
-        } while ( m_f( x ) < y );
-        const F xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
-        m_bin_count[static_cast<std::uint64_t>( xval / dx )]++;
+        std::cout << "rejection method" << std::endl;
+        for ( std::uint64_t i{ 0 }; i < m_N; ++i ) {
+            F x{ 0 }, y{ 0 };
+            do {
+                x = d_size * random_sample() + m_dmin;
+                y = r_size * random_sample() + m_rmin;
+            } while ( m_f( x ) < y );
+            const F xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
+            m_bin_count[static_cast<std::uint64_t>(
+                xval * static_cast<F>( m_M ) )]++;
+        }
     } break;
     case distr_type::weighted: {
         //  Generate samples & store for multiple use
@@ -202,20 +214,15 @@ distribution<F>::gen_distribution( const distr_type    type,
                 static_cast<std::uint64_t>( x * static_cast<F>( m_M ) ) );
             const F qi{ m_bin_count[i] * m_M
                         / ( m_rmax * static_cast<F>( m_N ) ) };
-            const F pi{ m_f( x ) };
+            const F pi{ m_f( ( m_dmax - m_dmin ) * x + m_dmin ) };
 
             m_weights[i] += pi / qi;
         } );
         // 2) For each bin in both the flat distribution and the weights,
         // divide the weight sum by the number of samples in the bin.
-        F sum{ 0 };
         for ( std::size_t i = 0; i < m_M; ++i ) {
             m_weights[i] /= m_bin_count[i];
-            sum +=
-                m_weights[i]
-                * ( m_bin_count[i] * m_M / ( m_rmax * static_cast<F>( m_N ) ) );
         }
-        std::cout << "sum: " << sum << std::endl;
     } break;
     }
 
@@ -311,7 +318,7 @@ p_mu( F m ) {
 
 int
 main() {
-    const std::uint64_t N{ 10000000 };
+    const std::uint64_t N{ 1000000 };
     const std::uint64_t M{ 1000 };
 
     distribution<double> sq_sine{};
@@ -326,31 +333,16 @@ main() {
     const auto xvals1 = linspace<double>( 0, M_PI, M, false );
     const auto yvals1{ sq_sine.transform( xvals1 ) };
 
-    /*for ( std::uint64_t i = 0; i < M; ++i ) {
-        std::cout << "x: " << xvals1[i]
-                  << ", f(x): " << M_2_PI * powl( sinl( xvals1[i] ), 2 )
-                  << ", y: " << yvals1[i] << std::endl;
-    }*/
-
     write_to_file( "data1.csv", xvals1, yvals1 );
 
     distribution<double> distr{};
     distr.gen_distribution(
-        distr_type::rejection, static_cast<std::uint64_t>( 1 ), N, M,
+        distr_type::weighted, static_cast<std::uint64_t>( 1 ), N, M,
         static_cast<double>( -1 ), static_cast<double>( 1 ),
         static_cast<double>( 0 ), static_cast<double>( 0.75 ), p_mu<double> );
 
-    const auto test = []( const double m ) -> double {
-        return 0.375 * ( 1. + pow( m, 2. ) );
-    };
     const auto xvals2 = linspace<double>( -1, 1, M, false );
     const auto yvals2{ distr.transform( xvals2 ) };
-
-    /*for ( std::uint64_t i = 0; i < M; ++i ) {
-        std::cout << xvals2[i] << ", " << yvals2[i] << ", " << test(
-    xvals2[i] )
-                  << std::endl;
-    }*/
 
     write_to_file( "data2.csv", xvals2, yvals2 );
 }
