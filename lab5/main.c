@@ -174,17 +174,6 @@ rejection_method( const p_func p, const int64_t s, const float dmin,
         bin_count[( uint64_t ) ( ( x - dmin ) / ( dx * d_size ) )]++;
     }
 
-    printf( "TESTS:\n" );
-    printf( "d_size = %lf, r_size = %lf\n", d_size, r_size );
-    float    sum = 0;
-    uint64_t sum2 = 0;
-    for ( uint64_t i = 0; i < M; ++i ) {
-        sum += ( bin_count[i] / ( dx * N ) ) * dx;
-        sum2 += bin_count[i];
-    }
-    printf( "sum y_i * dx_i: %f\n", ( sum ) );
-    printf( "sum N: %llu\n", sum2 );
-
     distr d = { .dx = dx,
                 .bin_count = bin_count,
                 .N = N,
@@ -317,7 +306,7 @@ main() {
     float rmin = 0;
     float rmax = M_2_PI;
 
-    N = 1000000;
+    N = 100000;
     n_bins = 100;
 
     const distr d1 =
