@@ -35,7 +35,10 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-Wall -Wextra -pedantic -O0 -g -ggdb -fsanitize=address -fsanitize=undefined -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk"
+					"fragment" : "-Wall -Wextra -pedantic -O0 -g -ggdb -fsanitize=address -fsanitize=undefined"
+				},
+				{
+					"fragment" : "-std=gnu++20"
 				}
 			],
 			"language" : "CXX",
@@ -63,7 +66,7 @@
 				"role" : "flags"
 			},
 			{
-				"fragment" : "-L/opt/homebrew/opt/sqlite/lib -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/openssl@3/lib",
+				"fragment" : "-rdynamic",
 				"role" : "flags"
 			}
 		],

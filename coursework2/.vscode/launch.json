@@ -15,6 +15,15 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb"
+        },
+        {
+            "name": "cppbuild",
+            "type": "cppdbg",
+            "program": "${workspaceFolder}/24697",
+            "request": "launch",
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "externalConsole": true
         }
     ]
 }
