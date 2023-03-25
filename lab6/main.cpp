@@ -231,6 +231,34 @@ plot( const std::size_t & N, const std::string & title,
     pclose( plot_pipe );
 }
 
+void
+plot( const std::string & title, const std::string & fname,
+      const std::vector<double> & s_vals ) {
+    FILE * plot_pipe = popen( "gnuplot -persist", "w" );
+    if ( !plot_pipe ) {
+        std::cout << "Failed to open pipe for gnuplot.\n";
+        exit( EXIT_FAILURE );
+    }
+    fprintf(
+        plot_pipe,
+        "set terminal png size 1200,900 enhanced font 'Times New Roman'\n" );
+    fprintf( plot_pipe, "set output '%s.png'\n", fname.c_str() );
+    fprintf( plot_pipe, "set title '%s'\n", title.c_str() );
+    fprintf( plot_pipe, "set xlabel 's'\n" );
+    fprintf( plot_pipe, "set ylabel 'I'\n" );
+    fprintf( plot_pipe, "set datafile separator ','\n" );
+
+    const std::string plot_cmd =
+        "plot '" + fname
+        + ".csv' using 1:2 title 'smax=" + std::to_string( s_vals.back() )
+        + ", N=" + std::to_string( s_vals.size() ) + "' with lines";
+    fprintf( plot_pipe, "%s\n", plot_cmd.c_str() );
+
+    fflush( plot_pipe );
+
+    pclose( plot_pipe );
+}
+
 
 int
 main() {
@@ -308,7 +336,6 @@ main() {
         std::vector<std::vector<double>> s_arr;
         std::vector<std::vector<double>> i_arr;
         for ( const auto & smax : smax_rng ) {
-            std::vector<std::size_t>  N_vals;
             const std::vector<double> s = linspace( smin, smax, N, false );
             s_arr.push_back( s );
 
@@ -332,4 +359,24 @@ main() {
         plot( N, "2.b - N = " + std::to_string( N ),
               "2b_N_" + std::to_string( N ), fnames, s_arr, i_arr );
     }
+
+    const auto                smax2{ 1000. };
+    const std::size_t         N{ 100000 };
+    const std::vector<double> svals = linspace( smin, smax2, N, false );
+    std::vector<double>       ivals( N );
+    ivals[0] = 100;
+    for ( std::size_t j{ 1 }; j < N; ++j ) {
+        ivals[j] = I_b( ivals[j - 1], svals[j], svals[j - 1], smax2 );
+    }
+
+    {
+        std::fstream fp;
+        fp.open( "large_N.csv", std::ios::out );
+        for ( const auto & [s, i] : zip( svals, ivals ) ) {
+            fp << std::to_string( s ) << "," << std::to_string( i )
+               << std::endl;
+        }
+        fp.close();
+    }
+    plot( "Hello", "large_N", svals );
 }

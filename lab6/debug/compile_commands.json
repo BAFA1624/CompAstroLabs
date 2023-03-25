@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/ben/Documents/gitrepos/CompAstroLabs/lab6/debug",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++   -Wall -Wextra -pedantic -O0 -ggdb -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -o CMakeFiles/main.dir/main.cpp.o -c /Users/ben/Documents/gitrepos/CompAstroLabs/lab6/main.cpp",
+  "file": "/Users/ben/Documents/gitrepos/CompAstroLabs/lab6/main.cpp",
+  "output": "CMakeFiles/main.dir/main.cpp.o"
+}
+]

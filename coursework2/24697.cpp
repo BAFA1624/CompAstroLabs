@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <execution>
 #include <fstream>
 #include <functional>
 #include <initializer_list>
@@ -8,7 +9,77 @@
 #include <vector>
 
 
-enum class distr_type { flat, rejection, weighted };
+template <typename T>
+concept Numeric = requires( T x ) {
+    requires std::is_integral_v<T> || std::is_floating_point_v<T>;
+    requires !std::is_same_v<bool, T>;
+};
+
+template <Numeric T>
+std::vector<T>
+linspace( const T & start, const T & end, const std::uint64_t N,
+          const bool include_endpoint = false ) {
+    const T dx{
+        ( start < end ) ?
+            ( end - start ) / static_cast<T>( include_endpoint ? N - 1 : N ) :
+            -( start - end ) / static_cast<T>( include_endpoint ? N - 1 : N )
+    };
+
+    std::vector<T> result;
+    result.reserve( N );
+    T tmp{ start };
+    for ( std::uint64_t i{ 0 }; i < N; ++i ) {
+        result.emplace_back( tmp );
+        tmp += dx;
+    }
+
+    return result;
+}
+
+template <Numeric T>
+std::vector<T>
+cumulative_sum( const typename std::vector<T>::const_iterator & cbegin,
+                const typename std::vector<T>::const_iterator & cend ) {
+    std::vector<T> result( std::distance( cbegin, cend ) );
+
+    T sum{ 0 };
+    std::transform( cbegin, cend, result.begin(), [&sum]( const T & x ) -> T {
+        sum += x;
+        return sum;
+    } );
+
+    return result;
+}
+
+std::uint64_t
+random( const std::uint64_t s, const bool set_seed = false ) {
+    static std::uint64_t seed{ 0 };
+    if ( set_seed ) {
+        seed = s;
+    }
+
+    seed = ( seed * static_cast<std::uint64_t>( 16807 ) )
+           % static_cast<std::uint64_t>( 2147483647 );
+
+    return seed;
+}
+
+template <std::floating_point F>
+F
+random_f( const std::uint64_t s, const bool set_seed = false ) {
+    static std::uint64_t seed{ 0 };
+    if ( set_seed ) {
+        seed = s;
+    }
+
+    seed = ( seed * static_cast<std::uint64_t>( 16807 ) )
+           % static_cast<std::uint64_t>( 2147483647 );
+
+    return static_cast<F>( seed ) / static_cast<F>( 2147483647 );
+}
+
+
+enum class distr_type { flat, rejection, importance, cumulative };
 
 template <std::floating_point F>
 class distribution
@@ -25,7 +96,7 @@ class distribution
         m_rmin(),
         m_rmax(),
         m_f(),
-        m_endpoint(){};
+        m_f_inverse() {}
 
     F random_sample() noexcept {
         m_seed = ( static_cast<std::uint64_t>( 16807 ) * m_seed )
@@ -33,9 +104,25 @@ class distribution
         return static_cast<F>( m_seed ) / static_cast<F>( 2147483647 );
     }
 
-    F random() const noexcept {
-        const F x{ ( m_dmax - m_dmin ) * random_sample() + m_dmin };
-        return transform( x );
+    F random() noexcept {
+        if ( m_type == distr_type::cumulative ) {
+            const F random{ random_sample() };
+            /*std::cout << "m_f_inverse(" << random
+                      << ") = " << m_f_inverse( random ) << ", m_f("
+                      << m_f_inverse( random )
+                      << ") = " << m_f( m_f_inverse( random ) ) << std::endl;*/
+            return m_f_inverse( random );
+        }
+        else {
+            return ( m_rmax - m_rmin ) * random_sample() + m_rmin;
+        }
+    }
+
+    std::vector<F> random( const std::uint64_t N ) noexcept {
+        std::vector<F> result( N );
+        std::generate( result.begin(), result.end(),
+                       [this]() { return random(); } );
+        return result;
     }
 
     F transform( const F x ) const noexcept;
@@ -47,22 +134,22 @@ class distribution
         const std::uint64_t M, const F d_min, const F d_max, const F r_min,
         const F                             r_max,
         const std::function<F( const F )> & f = []( const F ) -> F {
-            return 1.;
+            return static_cast<F>( 0 );
         },
-        const bool include_endpoint = true ) noexcept;
+        const std::function<F( const F )> & f_inverse = []( const F ) -> F {
+            return static_cast<F>( 0 );
+        } ) noexcept;
 
     private:
     F transform_nonweighted( const F x ) const noexcept;
-    F transform_weighted( const F x ) const noexcept;
+    F transform_importance( const F x ) const noexcept;
+    F transform_cumulative( const F x ) const noexcept;
 
     void initialize_distribution(
         const distr_type type, const std::uint64_t seed, const std::uint64_t N,
         const std::uint64_t M, const F d_min, const F d_max, const F r_min,
-        const F                             r_max,
-        const std::function<F( const F )> & f = []( const F ) -> F {
-            return 1.;
-        },
-        const bool include_endpoint = true ) noexcept;
+        const F r_max, const std::function<F( const F )> & f,
+        const std::function<F( const F )> & f_inverse ) noexcept;
 
 
     distr_type                 m_type;      // Type of distribution
@@ -70,7 +157,8 @@ class distribution
     std::uint64_t              m_N;         // Total number of samples
     std::uint64_t              m_M;         // Number of bins
     std::vector<std::uint64_t> m_bin_count; // Sample count per bin
-    // Weights for importance sampling, only used for weighted distribution
+    // Weights for importance sampling, only used for importance sampled
+    // distribution
     std::vector<F> m_weights;
     /* The domain & range min/max. */
     F m_dmin;
@@ -79,8 +167,7 @@ class distribution
     F m_rmax;
     // Function to generate distribution
     std::function<F( const F )> m_f;
-    // Is the endpoint included in the distribution
-    bool m_endpoint;
+    std::function<F( const F )> m_f_inverse;
 };
 
 template <std::floating_point F>
@@ -89,13 +176,13 @@ distribution<F>::initialize_distribution(
     const distr_type type, const std::uint64_t seed, const std::uint64_t N,
     const std::uint64_t M, const F d_min, const F d_max, const F r_min,
     const F r_max, const std::function<F( const F )> & f,
-    const bool include_endpoint ) noexcept {
+    const std::function<F( const F )> & f_inverse ) noexcept {
     m_type = type;
     m_seed = seed;
     m_N = N;
     m_M = M;
     m_bin_count = std::vector<std::uint64_t>( M, 0 );
-    if ( m_type == distr_type::weighted ) {
+    if ( m_type == distr_type::importance ) {
         m_weights = std::vector<F>( m_M, static_cast<F>( 0. ) );
     }
     else {
@@ -106,30 +193,39 @@ distribution<F>::initialize_distribution(
     m_rmin = r_min;
     m_rmax = r_max;
     m_f = f;
-    m_endpoint = include_endpoint;
+    m_f_inverse = f_inverse;
 }
 
 template <std::floating_point F>
 F
 distribution<F>::transform( const F x ) const noexcept {
-    return ( m_type == distr_type::weighted ) ? transform_weighted( x ) :
-                                                transform_nonweighted( x );
+    return ( m_type == distr_type::importance ) ? transform_importance( x ) :
+                                                  transform_nonweighted( x );
 }
 
 template <std::floating_point F>
 std::vector<F>
 distribution<F>::transform( const std::vector<F> & v ) const noexcept {
     std::vector<F> result( v.size() );
-    if ( m_type == distr_type::weighted ) {
-        std::transform(
-            v.cbegin(), v.cend(), result.begin(),
-            [this]( const F x ) { return ( *this ).transform_weighted( x ); } );
-    }
-    else {
+    switch ( m_type ) {
+    case distr_type::importance: {
+        std::transform( v.cbegin(), v.cend(), result.begin(),
+                        [this]( const F x ) {
+                            return ( *this ).transform_importance( x );
+                        } );
+    } break;
+    case distr_type::cumulative: {
+        std::transform( v.cbegin(), v.cend(), result.begin(),
+                        [this]( const F x ) {
+                            return ( *this ).transform_cumulative( x );
+                        } );
+    } break;
+    default: {
         std::transform( v.cbegin(), v.cend(), result.begin(),
                         [this]( const F x ) {
                             return ( *this ).transform_nonweighted( x );
                         } );
+    } break;
     }
     return result;
 }
@@ -146,7 +242,7 @@ distribution<F>::transform_nonweighted( const F x ) const noexcept {
 
 template <std::floating_point F>
 F
-distribution<F>::transform_weighted( const F x ) const noexcept {
+distribution<F>::transform_importance( const F x ) const noexcept {
     const F    xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
     const auto i{ static_cast<std::uint64_t>( xval * m_M ) };
     return m_weights[i] * m_bin_count[i] * m_M
@@ -154,18 +250,22 @@ distribution<F>::transform_weighted( const F x ) const noexcept {
 }
 
 template <std::floating_point F>
+F
+distribution<F>::transform_cumulative( const F x ) const noexcept {
+    return m_f_inverse( ( x - m_dmin ) / ( m_dmax - m_dmin ) );
+}
+
+template <std::floating_point F>
 void
-distribution<F>::gen_distribution( const distr_type    type,
-                                   const std::uint64_t seed,
-                                   const std::uint64_t N, const std::uint64_t M,
-                                   const F d_min, const F d_max, const F r_min,
-                                   const F                             r_max,
-                                   const std::function<F( const F )> & f,
-                                   const bool include_endpoint ) noexcept {
+distribution<F>::gen_distribution(
+    const distr_type type, const std::uint64_t seed, const std::uint64_t N,
+    const std::uint64_t M, const F d_min, const F d_max, const F r_min,
+    const F r_max, const std::function<F( const F )> & f,
+    const std::function<F( const F )> & f_inverse ) noexcept {
     // Fresh initialization, allows gen_distribution to be called repeatedly
     // to generate a new, different distribution.
     initialize_distribution( type, seed, N, M, d_min, d_max, r_min, r_max, f,
-                             include_endpoint );
+                             f_inverse );
 
     /* Bin size of distribution to generate
        Distribution is treated as having domain 0 <= x <= 1
@@ -192,7 +292,7 @@ distribution<F>::gen_distribution( const distr_type    type,
                 xval * static_cast<F>( m_M ) )]++;
         }
     } break;
-    case distr_type::weighted: {
+    case distr_type::importance: {
         //  Generate samples & store for multiple use
         std::vector<F> samples( m_N, F{ 0 } );
         std::generate( samples.begin(), samples.end(),
@@ -217,7 +317,7 @@ distribution<F>::gen_distribution( const distr_type    type,
             const auto i{ static_cast<std::uint64_t>(
                 s * static_cast<F>( m_M ) ) };
             const F    xval = ( m_dmax - m_dmin ) * s + m_dmin;
-            const F    p_flat{ m_bin_count[i] * m_M / ( ( m_rmax ) *m_N ) };
+            const F    p_flat{ m_bin_count[i] * m_M / ( m_rmax * m_N ) };
             m_weights[i] += ( m_f( xval ) / p_flat );
         }
         // 2) For each bin in both the flat distribution and the weights,
@@ -225,13 +325,40 @@ distribution<F>::gen_distribution( const distr_type    type,
         for ( std::uint64_t i{ 0 }; i < m_M; ++i ) {
             m_weights[i] /= m_bin_count[i];
         }
-
-        break;
+    } break;
+    default: break;
     }
-
-        return;
-    }
+    return;
 }
+
+
+template <std::floating_point F>
+class position
+{
+    public:
+    position( const F x, const F y, const F z ) : m_pos( { x, y, z } ) {}
+
+    [[nodiscard]] std::array<F, 3> pos() const noexcept { return m_pos; }
+    [[nodiscard]] F                x() const noexcept { return m_pos[0]; }
+    [[nodiscard]] F                y() const noexcept { return m_pos[1]; }
+    [[nodiscard]] F                z() const noexcept { return m_pos[2]; }
+
+    position & move( const F x, const F y, const F z ) noexcept {
+        m_pos[0] += x;
+        m_pos[1] += y;
+        m_pos[2] += z;
+        return *this;
+    }
+    position & move( const std::array<F, 3> & dr ) noexcept {
+        m_pos[0] += dr[0];
+        m_pos[1] += dr[1];
+        m_pos[2] += dr[2];
+        return *this;
+    }
+
+    private:
+    std::array<F, 3> m_pos;
+};
 
 
 enum class angle_change_type { add, random };
@@ -242,13 +369,13 @@ class photon
     public:
     photon( const angle_change_type change_type, const F x, const F y,
             const F z, const F theta, const F phi ) :
-        m_change_type( change_type ),
         m_x( x ),
         m_y( y ),
         m_z( z ),
         m_theta( theta ),
         m_phi( phi ),
-        m_absorbed( false ) {}
+        m_absorbed( false ),
+        m_change_type( change_type ) {}
 
     photon & move( const F tau = 0 ) noexcept;
     photon & scatter( const F theta = 0, const F phi = 0 ) noexcept;
@@ -267,7 +394,11 @@ class photon
     [[nodiscard]] F theta() const noexcept { return m_theta; }
     [[nodiscard]] F phi() const noexcept { return m_phi; }
     [[nodiscard]] F absorbed() const noexcept { return m_absorbed; }
-    void            set_absorbed() noexcept { m_absorbed = true; }
+    [[nodiscard]] angle_change_type type() const noexcept {
+        return m_change_type;
+    }
+
+    void set_absorbed() noexcept { m_absorbed = true; }
 
     private:
     F m_x;
@@ -297,35 +428,31 @@ photon<F>::move( const F tau ) noexcept {
 template <std::floating_point F>
 photon<F> &
 photon<F>::scatter( const F theta, const F phi ) noexcept {
-    constexpr if ( m_change_type == angle_change_type::random ) {
+    if ( m_change_type == angle_change_type::random ) {
         m_theta = theta;
         m_phi = phi;
     }
     else {
         const F tmp_theta = m_theta + theta;
         m_theta = tmp_theta + std::floor( tmp_theta / M_PI ) * ( -2 * theta );
-        m_phi = ( m_phi + phi ) % ( 2 * M_PI );
+        m_phi = std::fmod( m_phi + phi, 2 * M_PI );
     }
-    // std::cout << "theta: " << m_theta << std::endl;
-    // std::cout << "phi: " << m_phi << std::endl;
     return *this;
 }
 
 template <std::floating_point F>
 photon<F>
-track_photon( photon<F> & p, const distribution<F> & d_theta,
-              const distribution<F> & d_phi, const distribution<F> & d_albedo,
-              const F tau = 10, const F albedo = 1., const F zmin = 0.,
-              const F zmax = 1. ) {
-    goto LOOP_START;
-
+track_photon( photon<F> & p, distribution<F> d_theta, distribution<F> d_phi,
+              distribution<F> d_albedo, distribution<F> d_tau, const F tau = 10,
+              const F albedo = 1., const F zmin = 0., const F zmax = 1. ) {
+    const F alpha = tau / ( zmax - zmin );
 REGENERATE_PHOTON:
-    p = photon<F>{ type, 0, 0, 0, 0, 0 };
+    p = photon<F>{ p.type(), 0, 0, 0, 0, 0 };
     goto LOOP_START;
 
     do {
         // Scatter or absorb?
-        if ( albedo.random_sample() >= a ) {
+        if ( d_albedo.random() >= albedo ) {
             // Absorb photon
             std::cout << "Photon absorbed, this is shouldn't be reached."
                       << std::endl;
@@ -334,14 +461,15 @@ REGENERATE_PHOTON:
         }
 
         // Scatter
-        p.scatter( theta.random(), phi.random() );
+        p.scatter( d_theta.random(), d_phi.random() );
+
+    LOOP_START:
 
         // Move
-    LOOP_START:
-        p.move( tau );
+        p.move( alpha * d_tau.random() );
     } while ( p.z() >= zmin && p.z() <= zmax );
 
-    if ( z < zmin ) {
+    if ( p.z() < zmin ) {
         goto REGENERATE_PHOTON;
     }
 
@@ -350,59 +478,50 @@ END:
 }
 
 template <std::floating_point F>
-void
-isotropic_scattering( const std::uint64_t N, const angle_change_type type,
-                      const F tau = 10, const F albedo = 1, const F zmin = 0.,
+std::vector<photon<F>>
+isotropic_scattering( const std::uint64_t N, const std::uint64_t rand_seed,
+                      const angle_change_type type, const F tau = 10,
+                      const F albedo = 1, const F zmin = 0.,
                       const F zmax = 0 ) {
     distribution<F> d_theta;
     distribution<F> d_phi;
     distribution<F> d_albedo;
+    distribution<F> d_tau;
     // Initialize theta & phi distributions with some random seed values
-    d_theta.gen_distribution( distr_type::flat, 12341235, 1000000, 1000, 0, 1,
-                              0, M_PI );
-    d_phi.gen_distribution( distr_type::flat, 5439867, 1000000, 1000, 0, 1, 0,
-                            M_PI );
+    const auto d_theta_seed{ random( rand_seed, true ) };
+    d_theta.gen_distribution( distr_type::flat, d_theta_seed, 2000000, 10000, 0,
+                              1., 0, M_PI );
+    const auto d_phi_seed{ random( rand_seed ) };
+    d_phi.gen_distribution( distr_type::flat, d_phi_seed, 2000000, 10000, 0, 1.,
+                            0, 2 * M_PI );
     // Albedo distribution doesn't need high N, the distribution needs to vary
     // from 0 - 1 so just use result of distribution::random_sample() instead.
-    d_albedo.gen_distribution( distr_type::flat, 1, 1, 1, 0, 1, 0, 1 );
+    const auto d_albedo_seed{ random( rand_seed ) };
+    d_albedo.gen_distribution( distr_type::flat, d_albedo_seed, 2000000, 10000,
+                               0, 1, 0, 1 );
+    const auto d_tau_seed{ random( rand_seed ) };
+    d_tau.gen_distribution(
+        distr_type::cumulative, d_tau_seed, 1000000, 10000, 0, 1, 0, 1,
+        []( const F x ) { return std::exp( -x ); },
+        []( const F x ) { return -std::log( 1 - x ); } );
 
     // Initialize N photons at position (0, 0, 0) and angle (0, 0)
     std::vector<photon<F>> photons( N, photon<F>{ type, 0, 0, 0, 0, 0 } );
 
     // Launch particles
-    std::for_each( photons.begin(), photons.end(), [&]( const photon<F> & p ) {
-        return track_photon( p, d_theta, d_phi, d_albedo, tau, albedo, zmin,
-                             zmax );
-    } );
+    std::for_each( std::execution::par_unseq, photons.begin(), photons.end(),
+                   [&]( photon<F> & p ) {
+                       return track_photon<F>( p, d_theta, d_phi, d_albedo,
+                                               d_tau, tau, albedo, zmin, zmax );
+                   } );
 
-    // Bin by intensity
-    const F d_mu{ 2 * M_PI / 10 };
+    return photons;
 }
 
 void
 thomson_scattering() {}
 
 
-template <typename T>
-std::vector<T>
-linspace( const T & start, const T & end, const std::uint64_t N,
-          const bool include_endpoint = false ) {
-    const T dx{
-        ( start < end ) ?
-            ( end - start ) / static_cast<T>( include_endpoint ? N - 1 : N ) :
-            -( start - end ) / static_cast<T>( include_endpoint ? N - 1 : N )
-    };
-
-    std::vector<T> result;
-    result.reserve( N );
-    T tmp{ start };
-    for ( std::uint64_t i{ 0 }; i < N; ++i ) {
-        result.emplace_back( tmp );
-        tmp += dx;
-    }
-
-    return result;
-}
 
 template <std::floating_point F>
 void
@@ -440,6 +559,10 @@ main() {
 
     const double dmin{ -1 }, dmax{ 1 }, rmin{ 0. }, rmax{ 0.75 };
 
+    std::cout << "1.a) Writing example distributions based on rejection method "
+                 "& importance sampling to data1.csv & data2.csv."
+              << std::endl;
+
     distribution<double> rejection{};
     rejection.gen_distribution( distr_type::rejection,
                                 static_cast<std::uint64_t>( 1 ), N, M, dmin,
@@ -448,15 +571,61 @@ main() {
     const auto xvals1 = linspace<double>( dmin, dmax, M, false );
     const auto yvals1{ rejection.transform( xvals1 ) };
 
-    write_to_file( "data1.csv", xvals1, yvals1, 20 );
+    write_to_file( "1a_rejection_method.csv", xvals1, yvals1, 20 );
 
-    distribution<double> weighted{};
-    weighted.gen_distribution( distr_type::weighted,
-                               static_cast<std::uint64_t>( 1 ), N, M, dmin,
-                               dmax, rmin, rmax, p_mu<double> );
+    distribution<double> importance_sampled{};
+    importance_sampled.gen_distribution( distr_type::importance,
+                                         static_cast<std::uint64_t>( 1 ), N, M,
+                                         dmin, dmax, rmin, rmax, p_mu<double> );
 
     const auto xvals2 = linspace<double>( dmin, dmax, M, false );
-    const auto yvals2{ weighted.transform( xvals2 ) };
+    const auto yvals2{ importance_sampled.transform( xvals2 ) };
 
-    write_to_file( "data2.csv", xvals2, yvals2, 20 );
+    write_to_file( "1a_importance_sampled.csv", xvals2, yvals2, 20 );
+
+    std::cout << "Done." << std::endl;
+
+    std::cout << "1.b) Simulating isotropic scattering." << std::endl;
+
+    const auto photons = isotropic_scattering<double>(
+        100000, 103245, angle_change_type::random, 1, 1., 0., 1 );
+
+    // Change in mu
+    const std::uint64_t n{ 10 };
+    const double        d_mu{ 1. / ( static_cast<double>( n - 1 ) ) };
+    // Generate bin boundaries, then shift to midpoint of bin
+    auto bins = linspace<double>( 0, 1, n );
+    std::transform( bins.begin(), bins.end(), bins.begin(),
+                    [&d_mu]( const auto & d ) { return d + ( d_mu / 2 ); } );
+
+    // Bin intensity values
+    std::vector<double> intensity( n, 0 );
+    std::for_each(
+        photons.cbegin(), photons.cend(),
+        [&intensity, &d_mu]( const auto & p ) {
+            const auto r{ std::sqrt( p.x() * p.x() + p.y() * p.y()
+                                     + p.z() * p.z() ) };
+            const auto cos_theta{ p.z() / r };
+            // std::cout << "cos_theta: " << cos_theta << std::endl;
+            const auto i{ static_cast<std::uint64_t>( cos_theta / d_mu ) };
+            intensity[i] += 1.;
+        } );
+    // Normalize by total no. of photons
+    double sum{ 0. };
+    std::for_each( intensity.begin(), intensity.end(), [&N, &sum]( auto & x ) {
+        x /= N;
+        sum += x;
+    } );
+    std::cout << sum << std::endl;
+
+    for ( std::uint64_t i{ 0 }; i < intensity.size(); ++i ) {
+        std::cout << i << " " << intensity[i] << std::endl;
+    }
+
+    write_to_file( "1b_norm_intensity.csv", bins, intensity, 20 );
+
+    std::cout << "Done." << std::endl;
+
+    std::cout << "1.c) Simulating Thomson scattering." << std::endl;
+    std::cout << "Done." << std::endl;
 }

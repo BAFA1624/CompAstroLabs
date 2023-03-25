@@ -5,6 +5,25 @@ import matplotlib.gridspec as gridspec
 from scipy.optimize import curve_fit
 
 
+def read_data(filename):
+    x, y = [], []
+    with open(filename, "r") as file:
+        lines = file.readlines()
+        for line in lines:
+            vals = [np.float64(s) for s in line.strip().split(',')]
+            x.append(vals[0])
+            y.append(vals[1])
+        x = np.array(x)
+        y = np.array(y)
+    return x, y
+
+
+def p1(x): return (2/np.pi)*(np.sin(x)**2)
+def p2(x): return (0.375)*(1+x**2)
+def p3(x): return (0.375)*(1+(np.cos(x)**2)) * np.sin(x)
+def p4(x): return np.exp(-x)
+
+
 mpl.rcParams["mathtext.fontset"] = "cm"
 mpl.rcParams["font.sans-serif"] = "Times New Roman"
 mpl.rcParams["font.family"] = "sans-serif"
@@ -32,14 +51,12 @@ ax1 = fig1.add_subplot(111)
 ax2 = ax1.twiny()
 ax3 = ax2.twinx()
 
-
 ax1.plot(np.linspace(-1., 1., len(p_vals)), p_vals, 'k-', label=r"$P(\mu)$")
 ax1.set_ylim(0, None)
 ax1.set_xlim(-1, 1)
 ax1.set_xlabel(r"$\mu$", fontsize=14)
 ax1.set_ylabel(r"$P(\mu)=\frac{3}{8}(1+\mu^2)$", fontsize=14)
 ax1.tick_params(direction='in')
-
 
 ax2.set_xlabel(r"$\theta$", fontsize=14)
 ax2.set_xticks([-np.pi, -np.pi/2, 0, np.pi/2, np.pi])
@@ -56,27 +73,9 @@ fig1.legend()
 fig1.savefig("expected_probability")
 
 
-def p1(x): return (2/np.pi)*(np.sin(x)**2)
-def p2(x): return (0.375)*(1+x**2)
-def p3(x): return (0.375)*(1+(np.cos(x)**2)) * np.sin(x)
-
-
-def read_data(filename):
-    x, y = [], []
-    with open(filename, "r") as file:
-        lines = file.readlines()
-        for line in lines:
-            vals = [np.float64(s) for s in line.strip().split(',')]
-            x.append(vals[0])
-            y.append(vals[1])
-        x = np.array(x)
-        y = np.array(y)
-    return x, y
-
-
 yticks = np.arange(0.25, 0.875, 0.125)
 
-x, y = read_data('data1.csv')
+x, y = read_data('1a_rejection_method.csv')
 
 fig2 = plt.figure(figsize=(12, 12))
 ax1 = fig2.add_subplot(111)
@@ -111,9 +110,9 @@ ax1.set_ylabel(r'$P(\mu)$')
 ax1.tick_params(direction='in')
 ax1.set_yticks(yticks)
 ax1.set_yticklabels([r'$\frac{1}{4}$', r'$\frac{3}{8}$',
-                    r'$\frac{1}{2}$', r'$\frac{5}{8}$', r'$\frac{3}{4}$'])
+                     r'$\frac{1}{2}$', r'$\frac{5}{8}$', r'$\frac{3}{4}$'])
 
-x, y = read_data('data2.csv')
+x, y = read_data('1a_importance_sampled.csv')
 
 ax2.plot(x, y, 'ko', ls='none', markersize=1, label="Distribution")
 ax2.plot(x, p2(x), 'r--', label="Model")
@@ -129,5 +128,14 @@ ax2.set_yticklabels([r'$\frac{1}{4}$', r'$\frac{3}{8}$',
 
 ax1.legend()
 ax2.legend()
+
+
+x, y = read_data('1b_norm_intensity.csv')
+
+fig3 = plt.figure(figsize=(12, 12))
+ax1 = fig3.add_subplot(111)
+
+ax1.plot(x, y)
+
 
 plt.show()
