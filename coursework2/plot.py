@@ -135,7 +135,7 @@ x, y = read_data('1b_norm_intensity.csv')
 fig3 = plt.figure(figsize=(12, 12))
 ax1 = fig3.add_subplot(111)
 
-ax1.plot(x, y)
+ax1.plot(np.arccos(x), y, 'ko', ls='none')
 
 
 plt.show()
