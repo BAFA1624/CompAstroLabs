@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "24697::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-24697-Debug-b64ac9756eb3e8da9d78.json",
+					"jsonFile" : "target-24697-Debug-8db672739ee6159bac70.json",
 					"name" : "24697",
 					"projectIndex" : 0
 				}
@@ -49,12 +49,12 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/home/bena/Documents/gitrepos/CompAstroLabs/coursework2/build",
-		"source" : "/home/bena/Documents/gitrepos/CompAstroLabs/coursework2"
+		"build" : "/Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/build",
+		"source" : "/Users/ben/Documents/gitrepos/CompAstroLabs/coursework2"
 	},
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 4
+		"minor" : 5
 	}
 }

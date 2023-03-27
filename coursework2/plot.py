@@ -21,7 +21,7 @@ def read_data(filename):
 def p1(x): return (2/np.pi)*(np.sin(x)**2)
 def p2(x): return (0.375)*(1+x**2)
 def p3(x): return (0.375)*(1+(np.cos(x)**2)) * np.sin(x)
-def p4(x): return np.exp(-x)
+def p4(x, a=1, b=1): return a * np.exp(-b*x)
 
 
 mpl.rcParams["mathtext.fontset"] = "cm"
@@ -42,10 +42,10 @@ mu_vals = mu(theta_vals)
 p_vals = p(np.linspace(-1, 1, 10000))
 
 
-fig1 = plt.figure(figsize=(8, 8))
+fig1 = plt.figure(figsize=(7, 5))
 
-fig1.suptitle(
-    r"Expected Probability Distribution, $-\pi \leq \theta \leq \pi$", fontsize=16)
+# fig1.suptitle(
+#     r"Expected Probability Distribution, $-\pi \leq \theta \leq \pi$", fontsize=16)
 
 ax1 = fig1.add_subplot(111)
 ax2 = ax1.twiny()
@@ -135,7 +135,31 @@ x, y = read_data('1b_norm_intensity.csv')
 fig3 = plt.figure(figsize=(12, 12))
 ax1 = fig3.add_subplot(111)
 
-ax1.plot(np.arccos(x), y, 'ko', ls='none')
+ax1.plot(np.arccos(x), y, c='k', marker='x', markersize=5, ls='none')
+popt, pcov = curve_fit(p4, np.arccos(x), y)
+xtmp = np.linspace(0, 1, 1000)
+ax1.plot(np.arccos(xtmp), p4(np.arccos(xtmp), *popt), 'r--')
 
+ax1.set_xlabel(r"$\theta$")
+ax1.set_ylabel(r"Normalized Intensity")
+
+
+fig4 = plt.figure(figsize=(8, 5))
+ax1 = fig4.add_subplot(111)
+
+x, y = read_data('rejection_error.csv')
+ax1.loglog(x, y, c='k', marker='x', markersize=5,
+           ls='none', label='Rejection Method')
+
+x, y = read_data('importance_error.csv')
+ax1.loglog(x, y, c='k', marker='o', markersize=5,
+           ls='none', label='Importance Sampling')
+
+ax1.set_xlabel(r"Number of samples, $N$")
+ax1.set_ylabel(r"MSE($N$)")
+
+fig4.legend()
+
+print(popt)
 
 plt.show()
