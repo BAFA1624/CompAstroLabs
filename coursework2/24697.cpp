@@ -43,11 +43,10 @@ linspace( const T & start, const T & end, const std::uint64_t N,
             -( start - end ) / static_cast<T>( include_endpoint ? N - 1 : N )
     };
 
-    std::vector<T> result;
-    result.reserve( N );
-    T tmp{ start };
+    std::vector<T> result( N, 0 );
+    T              tmp{ start };
     for ( std::uint64_t i{ 0 }; i < N; ++i ) {
-        result.emplace_back( tmp );
+        result[i] = tmp;
         tmp += dx;
     }
 
@@ -379,7 +378,6 @@ class position
 {
     public:
     position( const F x, const F y, const F z ) : m_pos( { x, y, z } ) {}
-    position( const std::array<F, 3> & pos ) : m_pos( pos ) {}
 
     [[nodiscard]] std::array<F, 3> & pos() const noexcept { return m_pos; }
     void set_pos( const std::array<F, 3> & p ) noexcept { m_pos = p; }
@@ -425,7 +423,75 @@ class direction
     std::array<F, 2> m_dir;
 };
 
+template <std::floating_point F>
+class photon
+{
+    public:
+    photon( const F x, const F y, const F z, const F theta, const F phi ) :
+        m_x( x ),
+        m_y( y ),
+        m_z( z ),
+        m_theta( theta ),
+        m_phi( phi ),
+        m_absorbed( false ) {}
 
+    photon & move( const F tau = 0 ) noexcept;
+    photon & scatter( const F theta, const F phi ) noexcept;
+
+    [[nodiscard]] std::tuple<F, F, F> pos() const noexcept {
+        return { m_x, m_y, m_z };
+    }
+
+    [[nodiscard]] std::tuple<F, F> dir() const noexcept {
+        return { m_theta, m_phi };
+    }
+
+    [[nodiscard]] F x() const noexcept { return m_x; }
+
+    [[nodiscard]] F y() const noexcept { return m_y; }
+
+    [[nodiscard]] F z() const noexcept { return m_z; }
+
+    [[nodiscard]] F theta() const noexcept { return m_theta; }
+
+    [[nodiscard]] F phi() const noexcept { return m_phi; }
+
+    [[nodiscard]] F absorbed() const noexcept { return m_absorbed; }
+    void            set_absorbed() noexcept { m_absorbed = true; }
+
+    private:
+    F m_x;
+    F m_y;
+    F m_z;
+
+    F m_theta;
+    F m_phi;
+
+    bool m_absorbed;
+};
+
+template <std::floating_point F>
+photon<F> &
+photon<F>::move( const F tau ) noexcept {
+    const F s_theta{ std::sin( theta() ) }, c_theta{ std::cos( theta() ) },
+        s_phi{ std::sin( phi() ) }, c_phi{ std::cos( phi() ) };
+
+    m_x += tau * tau * s_theta * c_phi;
+    m_y += tau * s_theta * s_phi;
+    m_z += tau * c_theta;
+
+    return *this;
+}
+
+template <std::floating_point F>
+photon<F> &
+photon<F>::scatter( const F theta, const F phi ) noexcept {
+    m_theta = theta;
+    m_phi = phi;
+    return *this;
+}
+
+/*
 template <std::floating_point F>
 class photon
 {
@@ -486,7 +552,7 @@ photon<F>::scatter( const std::array<F, 2> & dir ) noexcept {
     set_theta( dir[0] );
     set_phi( dir[1] );
     return *this;
-}
+}*/
 
 template <std::floating_point F>
 photon<F>
@@ -496,7 +562,7 @@ track_photon( photon<F> & p, distribution<F> & d_theta, distribution<F> & d_phi,
               const F zmax = 1. ) {
     const F alpha = tau / ( zmax - zmin );
 REGENERATE_PHOTON:
-    p = photon<F>{ { 0, 0, 0 }, { 0, 0 } };
+    p = photon<F>{ 0, 0, 0, 0, 0 };
     goto LOOP_START;
 
     do {
@@ -511,7 +577,7 @@ REGENERATE_PHOTON:
         }
 
         // Scatter
-        p.scatter( { d_theta.random(), d_phi.random() } );
+        p.scatter( d_theta.random(), d_phi.random() );
 
     LOOP_START:
 
@@ -556,7 +622,7 @@ isotropic_scattering( const std::uint64_t N, const std::uint64_t rand_seed,
         []( const F x ) { return -std::log( 1 - x ); } );
 
     // Initialize N photons at position (0, 0, 0) and angle (0, 0)
-    std::vector<photon<F>> photons( N, photon<F>{ { 0, 0, 0 }, { 0, 0 } } );
+    std::vector<photon<F>> photons( N, photon<F>{ 0, 0, 0, 0, 0 } );
 
     // Launch particles
     std::for_each( photons.begin(), photons.end(), [&]( photon<F> & p ) {
@@ -582,13 +648,13 @@ mu( const F x ) {
 
 template <std::floating_point F>
 F
-p_mu( F m ) {
+p_mu( const F m ) {
     return 0.375 * ( 1 + pow( m, 2.0 ) );
 }
 
 template <std::floating_point F>
 F
-p_theta( F theta ) {
+p_theta( const F theta ) {
     return 0.375 * ( 1 + pow( cos( theta ), 2.0 ) ) * sin( theta );
 }
 
@@ -621,6 +687,9 @@ main() {
         error_testing.gen_distribution( distr_type::rejection, 1, n, 100, dmin,
                                         dmax, rmin, rmax, p_mu<double> );
         const auto rejection_vals{ error_testing.transform( xvals ) };
+
+        std::cout << true_vals.size() << " " << rejection_vals.size()
+                  << std::endl;
 
         error_values_rejection.push_back( MSE( rejection_vals, true_vals ) );
         std::cout << "Rejection MSE: " << error_values_rejection.back()
