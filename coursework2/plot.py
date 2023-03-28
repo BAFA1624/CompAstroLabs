@@ -163,3 +163,9 @@ fig4.legend()
 print(popt)
 
 plt.show()
+
+
+x, y = read_data('test_tau.csv')
+plt.plot(x, y, marker='o', ls='none')
+plt.show()
+print(y)

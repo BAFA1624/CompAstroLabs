@@ -617,7 +617,7 @@ isotropic_scattering( const std::uint64_t N, const std::uint64_t rand_seed,
                                0, 1, 0, 1 );
     const auto d_tau_seed{ random( rand_seed ) };
     d_tau.gen_distribution(
-        distr_type::cumulative, d_tau_seed, 1, 1, 0, 1, 0, 1,
+        distr_type::cumulative, d_tau_seed, 1, 1, 0, 1, 0, 10,
         []( const F x ) { return std::exp( -x ); },
         []( const F x ) { return -std::log( 1 - x ); } );
 
@@ -735,7 +735,7 @@ main() {
 
     const std::uint64_t n_photons{ 1000000 };
     const auto          photons =
-        isotropic_scattering<double>( n_photons, 121345235, 10, 1, 0., 1 );
+        isotropic_scattering<double>( n_photons, 21444, 10, 1, 0., 1 );
 
     // Change in mu
     const std::uint64_t n{ 10 };
@@ -775,9 +775,13 @@ main() {
     std::cout << "1.c) Simulating Thomson scattering." << std::endl;
     std::cout << "Done." << std::endl;
 
-    std::cout << std::setprecision( 20 )
-              << simpson_3_8<double>(
-                     []( const double x ) { return std::exp( -x ); }, 0, 10,
-                     10000 )
-              << std::endl;
+    distribution<double> test_tau{};
+    test_tau.gen_distribution(
+        distr_type::cumulative, 1, 1, 1, 0, 1, 0, 1,
+        []( const double x ) { return std::exp( -x ); },
+        []( const double y ) { return -std::log( 1 - y ); } );
+
+    const auto xvals3{ linspace<double>( 0, 100, 500 ) };
+    const auto yvals3{ test_tau.transform( xvals3 ) };
+    write_to_file( "test_tau.csv", xvals3, yvals3, 20 );
 }
