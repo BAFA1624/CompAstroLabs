@@ -739,7 +739,7 @@ main() {
 
     // Change in mu
     const std::uint64_t n{ 10 };
-    const double        d_mu{ 1. / ( static_cast<double>( n ) ) };
+    const double        d_mu{ 1. / ( static_cast<double>( n - 1 ) ) };
     // Generate bin boundaries, then shift to midpoint of bin
     auto bins = linspace<double>( 0, 1, n );
     std::transform( bins.begin(), bins.end(), bins.begin(),
@@ -747,20 +747,18 @@ main() {
 
     // Bin intensity values
     std::vector<double> intensity( n, 0 );
-    std::for_each( photons.cbegin(), photons.cend(),
-                   [&intensity, &d_mu]( const auto & p ) {
-                       const auto r{ std::sqrt( p.x() * p.x() + p.y() * p.y()
-                                                + p.z() * p.z() ) };
-                       const auto cos_theta{ p.z() / r };
-                       // std::cout << "cos_theta: " << cos_theta << std::endl;
-                       const auto i{ static_cast<std::uint64_t>(
-                           std::cos( p.theta() ) / d_mu ) };
-                       intensity[i] += 1.;
-                   } );
+    std::for_each(
+        photons.cbegin(), photons.cend(),
+        [&intensity, &d_mu]( const auto & p ) -> void {
+            const auto r{ std::sqrt( p.x() * p.x() + p.y() * p.y()
+                                     + p.z() * p.z() ) };
+            const auto i{ static_cast<std::uint64_t>( p.z() / ( r * d_mu ) ) };
+            intensity[i] += 1.;
+        } );
     // Normalize by total no. of photons
     double sum{ 0. };
     std::for_each( intensity.begin(), intensity.end(),
-                   [&n_photons, &sum]( auto & x ) {
+                   [&n_photons, &sum]( auto & x ) -> void {
                        x /= n_photons;
                        sum += x;
                    } );

@@ -12,7 +12,7 @@
 
 # =============================================================================
 # Project: COURSEWORK2
-# Configurations: Debug
+# Configurations: Release
 # =============================================================================
 
 #############################################
@@ -24,7 +24,7 @@ ninja_required_version = 1.5
 #############################################
 # Set configuration variable for custom commands.
 
-CONFIGURATION = Debug
+CONFIGURATION = Release
 # =============================================================================
 # Include auxiliary files.
 
@@ -49,9 +49,9 @@ cmake_ninja_workdir = /Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/bu
 
 build cmake_object_order_depends_target_24697: phony || CMakeFiles/24697.dir
 
-build CMakeFiles/24697.dir/24697.cpp.o: CXX_COMPILER__24697_unscanned_Debug /Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/24697.cpp || cmake_object_order_depends_target_24697
+build CMakeFiles/24697.dir/24697.cpp.o: CXX_COMPILER__24697_unscanned_Release /Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/24697.cpp || cmake_object_order_depends_target_24697
   DEP_FILE = CMakeFiles/24697.dir/24697.cpp.o.d
-  FLAGS = -Wall -Wextra -pedantic -O0 -g -ggdb -fsanitize=address -fsanitize=undefined -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk
+  FLAGS = -Wall -Wextra -pedantic -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk
   OBJECT_DIR = CMakeFiles/24697.dir
   OBJECT_FILE_DIR = CMakeFiles/24697.dir
 
@@ -63,8 +63,8 @@ build CMakeFiles/24697.dir/24697.cpp.o: CXX_COMPILER__24697_unscanned_Debug /Use
 #############################################
 # Link the executable 24697
 
-build 24697: CXX_EXECUTABLE_LINKER__24697_Debug CMakeFiles/24697.dir/24697.cpp.o
-  FLAGS = -Wall -Wextra -pedantic -O0 -g -ggdb -fsanitize=address -fsanitize=undefined -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk
+build 24697: CXX_EXECUTABLE_LINKER__24697_Release CMakeFiles/24697.dir/24697.cpp.o
+  FLAGS = -Wall -Wextra -pedantic -O3 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk
   LINK_FLAGS = -L/opt/homebrew/opt/sqlite/lib -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/openssl@3/lib
   OBJECT_DIR = CMakeFiles/24697.dir
   POST_BUILD = :

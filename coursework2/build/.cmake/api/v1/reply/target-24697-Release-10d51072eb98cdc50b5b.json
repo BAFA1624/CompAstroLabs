@@ -35,7 +35,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-Wall -Wextra -pedantic -O0 -g -ggdb -fsanitize=address -fsanitize=undefined -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk"
+					"fragment" : "-Wall -Wextra -pedantic -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk"
 				}
 			],
 			"language" : "CXX",
@@ -59,7 +59,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-Wall -Wextra -pedantic -O0 -g -ggdb -fsanitize=address -fsanitize=undefined",
+				"fragment" : "-Wall -Wextra -pedantic -O3",
 				"role" : "flags"
 			},
 			{
