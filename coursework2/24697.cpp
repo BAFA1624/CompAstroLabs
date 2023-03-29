@@ -147,11 +147,22 @@ class distribution
     }
 
     F random() noexcept {
-        if ( m_type == distr_type::cumulative ) {
+        switch ( m_type ) {
+        case distr_type::rejection: {
+            F rand_x{ ( m_dmax - m_dmin ) * random_sample() + m_dmin };
+            F rand_y{ ( m_rmax - m_rmin ) * random_sample() + m_rmin };
+            while ( rand_y < m_f( rand_x ) ) {
+                rand_x = ( m_dmax - m_dmin ) * random_sample() + m_dmin;
+                rand_y = ( m_rmax - m_rmin ) * random_sample() + m_rmin;
+            }
+            return rand_x;
+        } break;
+        case distr_type::cumulative: {
             return m_cnorm * m_f_inverse( random_sample() );
-        }
-        else {
+        } break;
+        default: {
             return ( m_rmax - m_rmin ) * random_sample() + m_rmin;
+        } break;
         }
     }
 
@@ -472,13 +483,13 @@ class photon
 
 template <std::floating_point F>
 photon<F> &
-photon<F>::move( const F tau ) noexcept {
+photon<F>::move( const F ds ) noexcept {
     const F s_theta{ std::sin( theta() ) }, c_theta{ std::cos( theta() ) },
         s_phi{ std::sin( phi() ) }, c_phi{ std::cos( phi() ) };
 
-    m_x += tau * tau * s_theta * c_phi;
-    m_y += tau * s_theta * s_phi;
-    m_z += tau * c_theta;
+    m_x += ds * s_theta * c_phi;
+    m_y += ds * s_theta * s_phi;
+    m_z += ds * c_theta;
 
     return *this;
 }
@@ -577,7 +588,9 @@ REGENERATE_PHOTON:
         }
 
         // Scatter
-        p.scatter( d_theta.random(), d_phi.random() );
+        const F t{ d_theta.random() };
+        const F p{ d_phi.random() };
+        p.scatter( t, p );
 
     LOOP_START:
 
@@ -617,7 +630,7 @@ isotropic_scattering( const std::uint64_t N, const std::uint64_t rand_seed,
                                0, 1, 0, 1 );
     const auto d_tau_seed{ random( rand_seed ) };
     d_tau.gen_distribution(
-        distr_type::cumulative, d_tau_seed, 1, 1, 0, 1, 0, 10,
+        distr_type::cumulative, d_tau_seed, 1, 1, 0, 1, 0, 1,
         []( const F x ) { return std::exp( -x ); },
         []( const F x ) { return -std::log( 1 - x ); } );
 
@@ -782,6 +795,6 @@ main() {
         []( const double y ) { return -std::log( 1 - y ); } );
 
     const auto xvals3{ linspace<double>( 0, 100, 500 ) };
-    const auto yvals3{ test_tau.transform( xvals3 ) };
+    const auto yvals3{ test_tau.random( xvals3.size() ) };
     write_to_file( "test_tau.csv", xvals3, yvals3, 20 );
 }
