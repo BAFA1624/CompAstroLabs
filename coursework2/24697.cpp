@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <execution>
 #include <fstream>
@@ -158,7 +159,7 @@ class distribution
             return rand_x;
         } break;
         case distr_type::cumulative: {
-            return m_cnorm * m_f_inverse( random_sample() );
+            return m_f_inverse( random_sample() );
         } break;
         default: {
             return ( m_rmax - m_rmin ) * random_sample() + m_rmin;
@@ -374,9 +375,11 @@ distribution<F>::gen_distribution(
         }
     } break;
     case distr_type::cumulative: {
+        std::cout << simpson_3_8( m_f, m_dmin, m_dmax, 100000 ) << std::endl;
         m_cnorm = 1
-                  / simpson_3_8( m_f_inverse, m_f( m_dmin ), m_f( m_dmax ),
+                  / simpson_3_8( m_f, m_dmin, m_dmax,
                                  std::max<std::uint64_t>( 10 * m_N, 10000 ) );
+        std::cout << m_cnorm << std::endl;
     } break;
     default: break;
     }
@@ -434,6 +437,8 @@ class direction
     std::array<F, 2> m_dir;
 };
 
+enum class scattering_type { isotropic, thomson };
+
 template <std::floating_point F>
 class photon
 {
@@ -448,6 +453,16 @@ class photon
 
     photon & move( const F tau = 0 ) noexcept;
     photon & scatter( const F theta, const F phi ) noexcept;
+    photon & set( const F x, const F y, const F z, const F theta, const F phi,
+                  const bool absorbed ) noexcept {
+        m_x = x;
+        m_y = y;
+        m_z = z;
+        m_theta = theta;
+        m_phi = phi;
+        m_absorbed = absorbed;
+        return *this;
+    }
 
     [[nodiscard]] std::tuple<F, F, F> pos() const noexcept {
         return { m_x, m_y, m_z };
@@ -458,17 +473,22 @@ class photon
     }
 
     [[nodiscard]] F x() const noexcept { return m_x; }
+    void            set_x( const F x ) noexcept { m_x = x; }
 
     [[nodiscard]] F y() const noexcept { return m_y; }
+    void            set_y( const F y ) noexcept { m_y = y; }
 
     [[nodiscard]] F z() const noexcept { return m_z; }
+    void            set_z( const F z ) noexcept { m_z = z; }
 
     [[nodiscard]] F theta() const noexcept { return m_theta; }
+    void            set_theta( const F theta ) noexcept { m_theta = theta; }
 
     [[nodiscard]] F phi() const noexcept { return m_phi; }
+    void            set_phi( const F phi ) noexcept { m_phi = phi; }
 
     [[nodiscard]] F absorbed() const noexcept { return m_absorbed; }
-    void            set_absorbed() noexcept { m_absorbed = true; }
+    void            set_absorbed( const bool b ) noexcept { m_absorbed = b; }
 
     private:
     F m_x;
@@ -484,8 +504,8 @@ class photon
 template <std::floating_point F>
 photon<F> &
 photon<F>::move( const F ds ) noexcept {
-    const F s_theta{ std::sin( theta() ) }, c_theta{ std::cos( theta() ) },
-        s_phi{ std::sin( phi() ) }, c_phi{ std::cos( phi() ) };
+    const F s_theta{ std::sin( m_theta ) }, c_theta{ std::cos( m_theta ) },
+        s_phi{ std::sin( m_phi ) }, c_phi{ std::cos( m_phi ) };
 
     m_x += ds * s_theta * c_phi;
     m_y += ds * s_theta * s_phi;
@@ -502,125 +522,88 @@ photon<F>::scatter( const F theta, const F phi ) noexcept {
     return *this;
 }
 
-/*
-template <std::floating_point F>
-class photon
-{
-    public:
-    photon( const std::array<F, 3> & pos, const std::array<F, 2> & dir ) :
-        m_pos( pos ), m_dir( dir ), m_absorbed( false ) {}
-
-    photon & move( const F tau = 0 ) noexcept;
-    photon & scatter( const std::array<F, 2> & dir ) noexcept;
-
-    [[nodiscard]] std::array<F, 3> pos() const noexcept { return m_pos; }
-    void set_pos( const std::array<F, 3> & pos ) noexcept { m_pos = pos; }
-
-    [[nodiscard]] std::array<F, 2> dir() const noexcept { return m_dir; }
-    void set_dir( const std::array<F, 2> & dir ) noexcept { m_dir = dir; }
-
-    [[nodiscard]] F x() const noexcept { return m_pos.x(); }
-    void            set_x( const F x ) { m_pos.set_x( x ); }
-
-    [[nodiscard]] F y() const noexcept { return m_pos.y(); }
-    void            set_y( const F y ) noexcept { m_pos.set_y( y ); }
-
-    [[nodiscard]] F z() const noexcept { return m_pos.z(); }
-    void            set_z( const F z ) noexcept { m_pos.set_z( z ); }
-
-    [[nodiscard]] F theta() const noexcept { return m_dir.theta(); }
-    void set_theta( const F theta ) noexcept { m_dir.set_theta( theta ); }
-
-    [[nodiscard]] F phi() const noexcept { return m_dir.phi(); }
-    void            set_phi( const F phi ) noexcept { m_dir.set_phi( phi ); }
-
-    [[nodiscard]] F absorbed() const noexcept { return m_absorbed; }
-    void            set_absorbed() noexcept { m_absorbed = true; }
-
-    private:
-    position<F>  m_pos;
-    direction<F> m_dir;
-
-    bool m_absorbed;
-};
-
 template <std::floating_point F>
 photon<F> &
-photon<F>::move( const F tau ) noexcept {
-    const F s_theta{ std::sin( theta() ) }, c_theta{ std::cos( theta() ) },
-        s_phi{ std::sin( phi() ) }, c_phi{ std::cos( phi() ) };
-
-    set_x( x() + tau * s_theta * c_phi );
-    set_y( y() + tau * s_theta * s_phi );
-    set_z( z() + tau * c_theta );
-
-    return *this;
+isotropic_scatter( photon<F> & p, const F theta, const F phi ) {
+    return p.scatter( theta, phi );
+}
+template <std::floating_point F>
+photon<F> &
+thomson_scatter( photon<F> & p, const F theta, const F phi ) {
+    return p;
 }
 
-template <std::floating_point F>
-photon<F> &
-photon<F>::scatter( const std::array<F, 2> & dir ) noexcept {
-    set_theta( dir[0] );
-    set_phi( dir[1] );
-    return *this;
-}*/
+
 
 template <std::floating_point F>
-photon<F>
-track_photon( photon<F> & p, distribution<F> & d_theta, distribution<F> & d_phi,
+photon<F> &
+track_photon( const scattering_type type, photon<F> & p,
+              distribution<F> & d_theta, distribution<F> & d_phi,
               distribution<F> & d_albedo, distribution<F> & d_tau,
               const F tau = 10, const F albedo = 1., const F zmin = 0.,
               const F zmax = 1. ) {
     const F alpha = tau / ( zmax - zmin );
-REGENERATE_PHOTON:
-    p = photon<F>{ 0, 0, 0, 0, 0 };
-    goto LOOP_START;
+    std::function<void( photon<F> &, const F, const F )> scatter_func;
+    // This wont work in it's current form
+    switch ( type ) {
+    case scattering_type::isotropic: {
+        scatter_func = [&d_theta, &d_phi, &p]() {
+            p.set_theta( d_theta.random() );
+            p.set_phi( d_phi.random() );
+        };
+    } break;
+    case scattering_type::thomson: {
+        scatter_func = [&d_theta, &d_phi, &p]() {
+            // Change in angle, photons frame
+            const F dt = d_theta.random();
+            const F dp = d_phi.random();
+        };
+    } break;
+    }
+    std::uint64_t count{ 0 };
+    double        sum = 0.;
 
-    do {
-        // Scatter or absorb?
-        if ( d_albedo.random() >= albedo ) {
-            // Absorb photon
-            std::cout << "Photon absorbed, this is shouldn't be reached."
-                      << std::endl;
-            assert( false );
-            p.set_absorbed();
-            goto END;
+    while ( p.z() <= zmax ) {
+        count++;
+        if ( p.z() <= zmin ) [[unlikely]] {
+            count = 0;
+            sum = 0.;
+            p.set( 0, 0, 0, 0, 0, false );
         }
 
-        // Scatter
-        const F t{ d_theta.random() };
-        const F p{ d_phi.random() };
-        p.scatter( t, p );
+        const F t{ 10 * d_tau.random() };
+        sum += t;
+        const auto theta{ d_theta.random() }, phi{ d_phi.random() };
+        p.move( t / alpha );
 
-    LOOP_START:
+        if ( d_albedo.random() >= albedo ) [[unlikely]] {
+            std::cout << "Photon absorbed, this shouldn't be reached atm."
+                      << std::endl;
+            p.set_absorbed( true );
+            return p;
+        }
 
-        // Move
-        p.move( d_tau.random() / alpha );
-    } while ( p.z() >= zmin && p.z() <= zmax );
-
-    if ( p.z() < zmin ) {
-        goto REGENERATE_PHOTON;
+        scatter_func( p, theta, phi );
     }
-
-END:
+    // std::cout << count << " " << sum << std::endl;
     return p;
 }
 
 template <std::floating_point F>
 std::vector<photon<F>>
-isotropic_scattering( const std::uint64_t N, const std::uint64_t rand_seed,
-                      const F tau = 10, const F albedo = 1, const F zmin = 0.,
-                      const F zmax = 0 ) {
+launch_simulation( const scattering_type type, const std::uint64_t N,
+                   const std::uint64_t rand_seed, const F tau = 10,
+                   const F albedo = 1, const F zmin = 0., const F zmax = 0 ) {
     distribution<F> d_theta;
     distribution<F> d_phi;
     distribution<F> d_albedo;
     distribution<F> d_tau;
     // Initialize theta & phi distributions with some random seed values
     const auto d_theta_seed{ random( rand_seed, true ) };
-    d_theta.gen_distribution( distr_type::flat, d_theta_seed, 2000000, 10000, 0,
+    d_theta.gen_distribution( distr_type::flat, d_theta_seed, 1000000, 10000, 0,
                               1., 0, M_PI );
     const auto d_phi_seed{ random( rand_seed ) };
-    d_phi.gen_distribution( distr_type::flat, d_phi_seed, 2000000, 10000, 0, 1.,
+    d_phi.gen_distribution( distr_type::flat, d_phi_seed, 1000000, 10000, 0, 1.,
                             0, 2 * M_PI );
     // Albedo distribution doesn't need high N, the distribution needs to
     // vary from 0 - 1 so just use result of distribution::random_sample()
@@ -632,15 +615,15 @@ isotropic_scattering( const std::uint64_t N, const std::uint64_t rand_seed,
     d_tau.gen_distribution(
         distr_type::cumulative, d_tau_seed, 1, 1, 0, 1, 0, 1,
         []( const F x ) { return std::exp( -x ); },
-        []( const F x ) { return -std::log( 1 - x ); } );
+        []( const F y ) { return -std::log( 1 - y ); } );
 
     // Initialize N photons at position (0, 0, 0) and angle (0, 0)
     std::vector<photon<F>> photons( N, photon<F>{ 0, 0, 0, 0, 0 } );
 
     // Launch particles
     std::for_each( photons.begin(), photons.end(), [&]( photon<F> & p ) {
-        return track_photon<F>( p, d_theta, d_phi, d_albedo, d_tau, tau, albedo,
-                                zmin, zmax );
+        return track_photon<F>( type, p, d_theta, d_phi, d_albedo, d_tau, tau,
+                                albedo, zmin, zmax );
     } );
 
     return photons;
@@ -747,8 +730,8 @@ main() {
     std::cout << "1.b) Simulating isotropic scattering." << std::endl;
 
     const std::uint64_t n_photons{ 1000000 };
-    const auto          photons =
-        isotropic_scattering<double>( n_photons, 21444, 10, 1, 0., 1 );
+    const auto          photons = launch_simulation<double>(
+        scattering_type::isotropic, n_photons, 42, 10, 1, 0., 1. );
 
     // Change in mu
     const std::uint64_t n{ 10 };
@@ -775,8 +758,11 @@ main() {
                        x /= n_photons;
                        sum += x;
                    } );
-    std::cout << sum << std::endl;
+    if ( sum != 1. ) {
+        std::cout << "WARNING: sum = " << sum << std::endl;
+    }
 
+    std::cout << std::endl;
     for ( std::uint64_t i{ 0 }; i < intensity.size(); ++i ) {
         std::cout << i << " " << bins[i] << " " << intensity[i] << std::endl;
     }
@@ -789,10 +775,8 @@ main() {
     std::cout << "Done." << std::endl;
 
     distribution<double> test_tau{};
-    test_tau.gen_distribution(
-        distr_type::cumulative, 1, 1, 1, 0, 1, 0, 1,
-        []( const double x ) { return std::exp( -x ); },
-        []( const double y ) { return -std::log( 1 - y ); } );
+    test_tau.gen_distribution( distr_type::flat, 1, 2000000, 10000, 0, 1., 0,
+                               2 * M_PI );
 
     const auto xvals3{ linspace<double>( 0, 100, 500 ) };
     const auto yvals3{ test_tau.random( xvals3.size() ) };
