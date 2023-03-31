@@ -130,15 +130,13 @@ ax1.legend()
 ax2.legend()
 
 
-x, y = read_data('1b_norm_intensity.csv')
+x, y = read_data('1b_norm_intensity_tau_10.csv')
 
 fig3 = plt.figure(figsize=(12, 12))
 ax1 = fig3.add_subplot(111)
 
+ax1.set_title("Isotropic Scattering")
 ax1.plot(np.arccos(x), y, c='k', marker='x', markersize=5, ls='none')
-# popt, pcov = curve_fit(p4, np.arccos(x), y)
-xtmp = np.linspace(0, 1, 1000)
-# ax1.plot(np.arccos(xtmp), p4(np.arccos(xtmp), *popt), 'r--')
 
 ax1.set_xlabel(r"$\theta$")
 ax1.set_ylabel(r"Normalized Intensity")
@@ -160,11 +158,15 @@ ax1.set_ylabel(r"MSE($N$)")
 
 fig4.legend()
 
-# print(popt)
+x, y = read_data('1c_norm_intensity_tau_10.csv')
+
+fig5 = plt.figure(figsize=(12, 12))
+ax1 = fig5.add_subplot(111)
+ax1.plot(np.arccos(x), y, c='k', marker='x', markersize=5, ls='none')
+xtmp = np.linspace(0, 1, 1000)
+
+ax1.set_title("Thomson Scattering")
+ax1.set_xlabel(r"$\theta$")
+ax1.set_ylabel(r"Normalized Intensity")
 
 plt.show()
-
-# x, y = read_data("test_tau.csv")
-
-# plt.plot(x, y, marker='o', ls='none', markersize=5)
-# plt.show()
