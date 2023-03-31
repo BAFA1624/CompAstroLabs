@@ -35,13 +35,18 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-Wall -Wextra -pedantic -O3  "
-				},
-				{
-					"fragment" : "-std=gnu++2a"
+					"fragment" : "-Wall -Wextra -pedantic -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk"
 				}
 			],
 			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "20"
+			},
 			"sourceIndexes" : 
 			[
 				0
@@ -58,7 +63,7 @@
 				"role" : "flags"
 			},
 			{
-				"fragment" : "-rdynamic",
+				"fragment" : "-L/opt/homebrew/opt/sqlite/lib -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/openssl@3/lib -L/opt/homebrew/opt/sqlite/lib -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/openssl@3/lib",
 				"role" : "flags"
 			}
 		],

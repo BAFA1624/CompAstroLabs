@@ -6,6 +6,7 @@
 			[
 				{
 					"build" : ".",
+					"jsonFile" : "directory-.-Release-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.2"
@@ -38,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "24697::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-24697-Release-2295ec9406aad17beef7.json",
+					"jsonFile" : "target-24697-Release-9f73a405d8a33cfabbf1.json",
 					"name" : "24697",
 					"projectIndex" : 0
 				}
@@ -48,12 +49,12 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/build",
-		"source" : "/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2"
+		"build" : "/Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/build",
+		"source" : "/Users/ben/Documents/gitrepos/CompAstroLabs/coursework2"
 	},
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 0
+		"minor" : 5
 	}
 }

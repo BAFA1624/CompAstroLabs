@@ -1,7 +1,8 @@
 [
 {
-  "directory": "/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/build",
-  "command": "/usr/bin/c++    -Wall -Wextra -pedantic -O3   -std=gnu++2a -o CMakeFiles/24697.dir/24697.cpp.o -c /u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/24697.cpp",
-  "file": "/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/24697.cpp"
+  "directory": "/Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++   -Wall -Wextra -pedantic -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -o CMakeFiles/24697.dir/24697.cpp.o -c /Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/24697.cpp",
+  "file": "/Users/ben/Documents/gitrepos/CompAstroLabs/coursework2/24697.cpp",
+  "output": "CMakeFiles/24697.dir/24697.cpp.o"
 }
 ]
