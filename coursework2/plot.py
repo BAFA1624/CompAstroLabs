@@ -150,6 +150,7 @@ ax1.set_xlabel(r"$\theta$")
 ax1.set_ylabel(r"Normalized Intensity")
 ax1.legend()
 ax1.tick_params(direction='in')
+fig3.tight_layout()
 
 fig4 = plt.figure(figsize=(8, 5))
 ax1 = fig4.add_subplot(111)
@@ -165,6 +166,7 @@ ax1.loglog(x, y, c='k', marker='o', markersize=5,
 ax1.set_xlabel(r"Number of samples, $N$")
 ax1.set_ylabel(r"MSE($N$)")
 ax1.tick_params(which='both', direction='in')
+fig4.tight_layout()
 
 fig4.legend()
 
@@ -191,5 +193,6 @@ ax1.set_ylabel(r"Normalized Intensity")
 ax1.tick_params(direction='in')
 
 ax1.legend()
+fig5.tight_layout()
 
 plt.show()

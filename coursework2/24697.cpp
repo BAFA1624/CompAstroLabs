@@ -2,7 +2,6 @@
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <execution>
 #include <fstream>
 #include <functional>
 #include <initializer_list>
