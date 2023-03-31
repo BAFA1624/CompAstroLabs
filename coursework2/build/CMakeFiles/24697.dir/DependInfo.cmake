@@ -1,14 +1,15 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/24697.cpp" "/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/build/CMakeFiles/24697.dir/24697.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/bena/Documents/gitrepos/CompAstroLabs/coursework2/24697.cpp" "CMakeFiles/24697.dir/24697.cpp.o" "gcc" "CMakeFiles/24697.dir/24697.cpp.o.d"
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
   )
 
 # Targets to which this target links.

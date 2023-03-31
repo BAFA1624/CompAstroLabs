@@ -2,7 +2,6 @@
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <execution>
 #include <fstream>
 #include <functional>
 #include <initializer_list>
@@ -12,13 +11,13 @@
 #include <vector>
 
 
-template <typename T>
+/*template <typename T>
 concept Numeric = requires( T x ) {
     requires std::is_integral_v<T> || std::is_floating_point_v<T>;
     requires !std::is_same_v<bool, T>;
-};
+};*/
 
-template <std::floating_point F>
+template <typename F>
 F
 simpson_3_8( const std::function<F( const F )> & f, const F start, const F end,
              const std::uint64_t N ) {
@@ -34,7 +33,7 @@ simpson_3_8( const std::function<F( const F )> & f, const F start, const F end,
     return sum;
 }
 
-template <Numeric T>
+template <typename T>
 std::vector<T>
 linspace( const T & start, const T & end, const std::uint64_t N,
           const bool include_endpoint = false ) {
@@ -54,7 +53,7 @@ linspace( const T & start, const T & end, const std::uint64_t N,
     return result;
 }
 
-template <Numeric T>
+template <typename T>
 std::vector<T>
 cumulative_sum( const typename std::vector<T>::const_iterator & cbegin,
                 const typename std::vector<T>::const_iterator & cend ) {
@@ -69,7 +68,7 @@ cumulative_sum( const typename std::vector<T>::const_iterator & cbegin,
     return result;
 }
 
-template <Numeric T>
+template <typename T>
 double
 MSE( const std::vector<T> & predicted_values,
      const std::vector<T> & true_values ) {
@@ -95,7 +94,7 @@ random( const std::uint64_t s, const bool set_seed = false ) {
     return seed;
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 random_f( const std::uint64_t s, const bool set_seed = false ) {
     static std::uint64_t seed{ 0 };
@@ -109,10 +108,10 @@ random_f( const std::uint64_t s, const bool set_seed = false ) {
     return static_cast<F>( seed ) / static_cast<F>( 2147483647 );
 }
 
-template <Numeric T1, Numeric T2>
+template <typename T1, typename T2>
 void
 write_to_file( const std::string & fname, const std::vector<T1> & x,
-               const std::vector<T2> & y, const auto precision ) {
+               const std::vector<T2> & y, const std::uint64_t precision ) {
     const std::uint64_t n_rows{ std::min( x.size(), y.size() ) };
     std::ofstream       f( fname, std::ios_base::out );
     for ( std::uint64_t i{ 0 }; i < n_rows; ++i ) {
@@ -123,7 +122,7 @@ write_to_file( const std::string & fname, const std::vector<T1> & x,
 
 enum class distr_type { flat, rejection, importance, cumulative };
 
-template <std::floating_point F>
+template <typename F>
 class distribution
 {
     public:
@@ -221,7 +220,7 @@ class distribution
     std::function<F( const F )> m_f_inverse;
 };
 
-template <std::floating_point F>
+template <typename F>
 void
 distribution<F>::initialize_distribution(
     const distr_type type, const std::uint64_t seed, const std::uint64_t N,
@@ -248,14 +247,14 @@ distribution<F>::initialize_distribution(
     m_f_inverse = f_inverse;
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform( const F x ) const noexcept {
     return ( m_type == distr_type::importance ) ? transform_importance( x ) :
                                                   transform_nonweighted( x );
 }
 
-template <std::floating_point F>
+template <typename F>
 std::vector<F>
 distribution<F>::transform( const std::vector<F> & v ) const noexcept {
     std::vector<F> result( v.size() );
@@ -282,7 +281,7 @@ distribution<F>::transform( const std::vector<F> & v ) const noexcept {
     return result;
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform_nonweighted( const F x ) const noexcept {
     const F xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
@@ -292,7 +291,7 @@ distribution<F>::transform_nonweighted( const F x ) const noexcept {
              + m_rmin );
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform_importance( const F x ) const noexcept {
     const F    xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
@@ -301,13 +300,13 @@ distribution<F>::transform_importance( const F x ) const noexcept {
            / ( ( m_rmax - m_rmin ) * static_cast<F>( m_N ) );
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform_cumulative( const F x ) const noexcept {
     return m_f_inverse( ( x - m_dmin ) / ( m_dmax - m_dmin ) );
 }
 
-template <std::floating_point F>
+template <typename F>
 void
 distribution<F>::gen_distribution(
     const distr_type type, const std::uint64_t seed, const std::uint64_t N,
@@ -380,7 +379,7 @@ distribution<F>::gen_distribution(
 }
 
 
-template <std::floating_point F>
+template <typename F>
 class position
 {
     public:
@@ -412,7 +411,7 @@ class position
     std::array<F, 3> m_pos;
 };
 
-template <std::floating_point F>
+template <typename F>
 class direction
 {
     public:
@@ -432,7 +431,7 @@ class direction
 
 enum class scattering_type { isotropic, thomson };
 
-template <std::floating_point F>
+template <typename F>
 class photon
 {
     public:
@@ -494,7 +493,7 @@ class photon
     bool m_absorbed;
 };
 
-template <std::floating_point F>
+template <typename F>
 photon<F> &
 photon<F>::move( const F ds ) noexcept {
     const F s_theta{ std::sin( m_theta ) }, c_theta{ std::cos( m_theta ) },
@@ -507,7 +506,7 @@ photon<F>::move( const F ds ) noexcept {
     return *this;
 }
 
-template <std::floating_point F>
+template <typename F>
 photon<F> &
 photon<F>::scatter( const F theta, const F phi ) noexcept {
     m_theta = theta;
@@ -515,7 +514,7 @@ photon<F>::scatter( const F theta, const F phi ) noexcept {
     return *this;
 }
 
-template <std::floating_point F>
+template <typename F>
 photon<F> &
 track_photon_isotropic( photon<F> & p, distribution<F> & d_theta,
                         distribution<F> & d_phi, distribution<F> & d_albedo,
@@ -525,13 +524,13 @@ track_photon_isotropic( photon<F> & p, distribution<F> & d_theta,
     const F alpha{ tau / ( zmax - zmin ) };
 
     while ( p.z() <= zmax ) {
-        if ( p.z() < zmin ) [[unlikely]] {
+        if ( p.z() < zmin )  {
             p.set( 0, 0, 0, 0, 0, false );
         }
 
         p.move( d_tau.random() / alpha );
 
-        if ( d_albedo.random() >= albedo ) [[unlikely]] {
+        if ( d_albedo.random() >= albedo )  {
             std::cout << "Photon absorbed, this shouldn't be reached atm."
                       << std::endl;
             p.set_absorbed( true );
@@ -563,7 +562,7 @@ track_photon_thomson( photon<F> & p, distribution<F> & d_theta,
         }
 
         // Check for scattering
-        if ( d_albedo.random() >= albedo ) [[unlikely]] {
+        if ( d_albedo.random() >= albedo )  {
             std::cout << "Photon absorbed, this shouldn't happen." << std::endl;
             p.set_absorbed( true );
             return p;
@@ -617,7 +616,7 @@ track_photon_thomson( photon<F> & p, distribution<F> & d_theta,
     return p;
 }
 
-template <std::floating_point F>
+template <typename F>
 std::vector<photon<F>>
 launch_simulation( const scattering_type type, const std::uint64_t N,
                    const std::uint64_t rand_seed, const F tau = 10,
@@ -683,7 +682,7 @@ launch_simulation( const scattering_type type, const std::uint64_t N,
     return photons;
 }
 
-template <std::floating_point F>
+template <typename F>
 std::tuple<std::vector<F>, std::vector<F>>
 norm_intensity( const std::vector<photon<F>> & photons,
                 const std::uint64_t            N ) {
@@ -717,26 +716,26 @@ norm_intensity( const std::vector<photon<F>> & photons,
     return { bins, intensity };
 }
 
-template <std::floating_point F>
+template <typename F>
 std::vector<photon<F>>
 thomson_scattering() {
     return std::vector<photon<F>>{};
 }
 
 
-template <std::floating_point F>
+template <typename F>
 F
 mu( const F x ) {
     return cos( x );
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 p_mu( const F m ) {
     return 0.375 * ( 1 + pow( m, 2.0 ) );
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 p_theta( const F theta ) {
     return 0.375 * ( 1 + pow( cos( theta ), 2.0 ) ) * sin( theta );
