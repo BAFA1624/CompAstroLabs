@@ -707,7 +707,6 @@ main() {
     std::cout << "Done.\n" << std::endl;
 
 
-
     // Part 1.c
     std::cout << "1.c) Simulating Thomson scattering." << std::endl;
 
