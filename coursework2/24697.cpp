@@ -825,8 +825,9 @@ main() {
     const auto & [isotropic_bins, isotropic_intensity] =
         norm_intensity( isotropic_photons, 10 );
 
-    write_to_file( "1b_norm_intensity_tau_10.csv", isotropic_bins,
-                   isotropic_intensity, 20 );
+    write_to_file( "1b_norm_intensity_tau_" + std::to_string( optical_depth )
+                       + ".csv",
+                   isotropic_bins, isotropic_intensity, 20 );
 
     std::cout << "Done.\n" << std::endl;
 
@@ -839,7 +840,8 @@ main() {
     const auto & [thomson_bins, thomson_intensity] =
         norm_intensity( thomson_photons, 10 );
 
-    write_to_file( "1c_norm_intensity_tau_10.csv", thomson_bins,
-                   thomson_intensity, 20 );
+    write_to_file( "1c_norm_intensity_tau_" + std::to_string( optical_depth )
+                       + ".csv",
+                   thomson_bins, thomson_intensity, 20 );
     std::cout << "Done." << std::endl;
 }

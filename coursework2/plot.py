@@ -129,18 +129,27 @@ ax2.set_yticklabels([r'$\frac{1}{4}$', r'$\frac{3}{8}$',
 ax1.legend()
 ax2.legend()
 
-
-x, y = read_data('1b_norm_intensity_tau_10.csv')
+x1, y1 = read_data('1b_norm_intensity_tau_0.100000.csv')
+x2, y2 = read_data('1b_norm_intensity_tau_1.000000.csv')
+x3, y3 = read_data('1b_norm_intensity_tau_10.000000.csv')
+x4, y4 = read_data('1b_norm_intensity_tau_15.000000.csv')
+x5, y5 = read_data('1b_norm_intensity_tau_20.000000.csv')
 
 fig3 = plt.figure(figsize=(12, 12))
 ax1 = fig3.add_subplot(111)
 
 ax1.set_title("Isotropic Scattering")
-ax1.plot(np.arccos(x), y, c='k', marker='x', markersize=5, ls='none')
+ax1.plot(np.arccos(x2), y2, c='k', marker='o',
+         markersize=3, ls='none', label=r'$\tau = 1$')
+ax1.plot(np.arccos(x3), y3, c='k', marker='x',
+         markersize=3, ls='none', label=r'$\tau = 10$')
+ax1.plot(np.arccos(x5), y5, c='k', marker='D',
+         markersize=3, ls='none', label=r'$\tau = 20$')
 
 ax1.set_xlabel(r"$\theta$")
 ax1.set_ylabel(r"Normalized Intensity")
-
+ax1.legend()
+ax1.tick_params(direction='in')
 
 fig4 = plt.figure(figsize=(8, 5))
 ax1 = fig4.add_subplot(111)
@@ -155,18 +164,32 @@ ax1.loglog(x, y, c='k', marker='o', markersize=5,
 
 ax1.set_xlabel(r"Number of samples, $N$")
 ax1.set_ylabel(r"MSE($N$)")
+ax1.tick_params(which='both', direction='in')
 
 fig4.legend()
 
-x, y = read_data('1c_norm_intensity_tau_10.csv')
+x1, y1 = read_data('1c_norm_intensity_tau_0.100000.csv')
+x2, y2 = read_data('1c_norm_intensity_tau_1.000000.csv')
+x3, y3 = read_data('1c_norm_intensity_tau_10.000000.csv')
+x4, y4 = read_data('1c_norm_intensity_tau_15.000000.csv')
+x5, y5 = read_data('1c_norm_intensity_tau_20.000000.csv')
 
 fig5 = plt.figure(figsize=(12, 12))
 ax1 = fig5.add_subplot(111)
-ax1.plot(np.arccos(x), y, c='k', marker='x', markersize=5, ls='none')
+ax1.axhline(0, c='k', linewidth=0.8)
+ax1.plot(np.arccos(x2), y2, c='k', marker='o',
+         markersize=3, ls='none', label=r'$\tau = 1$')
+ax1.plot(np.arccos(x3), y3, c='k', marker='x',
+         markersize=3, ls='none', label=r'$\tau = 10$')
+ax1.plot(np.arccos(x5), y5, c='k', marker='D',
+         markersize=3, ls='none', label=r'$\tau = 20$')
 xtmp = np.linspace(0, 1, 1000)
 
 ax1.set_title("Thomson Scattering")
 ax1.set_xlabel(r"$\theta$")
 ax1.set_ylabel(r"Normalized Intensity")
+ax1.tick_params(direction='in')
+
+ax1.legend()
 
 plt.show()
