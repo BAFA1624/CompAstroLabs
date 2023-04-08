@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/lab7/release",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++   -Wall -Wextra -pedantic -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk -o CMakeFiles/main.dir/main.cpp.o -c /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/lab7/main.cpp",
+  "file": "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/lab7/main.cpp",
+  "output": "CMakeFiles/main.dir/main.cpp.o"
+}
+]
