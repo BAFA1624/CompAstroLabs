@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wall -Wextra -pedantic -O3  -rdynamic CMakeFiles/24697.dir/24697.cpp.o  -o 24697 
