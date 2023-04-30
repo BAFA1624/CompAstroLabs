@@ -10,9 +10,10 @@ for filename in os.listdir():
     if re.match(pattern, filename):
         data[filename] = pd.read_csv(filename)
 
-plt.xlim(0, 400)
 for filename, df in data.items():
-    plt.plot(df['x'], df['q'])
+    plt.plot(df['x'], df['q'], label=filename)
+    os.remove(filename)
+plt.legend(loc='upper left')
 plt.show()
 
 data = {}
@@ -21,9 +22,11 @@ for filename in os.listdir():
     if re.match(pattern, filename):
         data[filename] = pd.read_csv(filename)
 
-plt.xlim(0, 400)
+# plt.xlim(0, 400)
 for filename, df in data.items():
-    plt.plot(df['x'], df['q'])
+    plt.plot(df['x'], df['q'], label=filename)
+    os.remove(filename)
+plt.legend(loc='upper left')
 plt.show()
 
 data = {}
@@ -32,7 +35,22 @@ for filename in os.listdir():
     if re.match(pattern, filename):
         data[filename] = pd.read_csv(filename)
 
-plt.xlim(0, 400)
+# plt.xlim(0, 400)
 for filename, df in data.items():
-    plt.plot(df['x'], df['q'])
+    plt.plot(df['x'], df['q'], label=filename)
+    os.remove(filename)
+plt.legend(loc='upper left')
+plt.show()
+
+data = {}
+pattern = re.compile(r"[\d]*\.[\d]*s_lax_friedrichs_state\.csv")
+for filename in os.listdir():
+    if re.match(pattern, filename):
+        data[filename] = pd.read_csv(filename)
+
+# plt.xlim(0, 400)
+for filename, df in data.items():
+    plt.plot(df['x'], df['q'], label=filename)
+    os.remove(filename)
+plt.legend(loc='upper left')
 plt.show()

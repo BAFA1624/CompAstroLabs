@@ -212,30 +212,38 @@ approximate( const std::function<T( const T )> & f, const T start,
 }*/
 
 enum class simulation_type {
-    diffusive,   // Diffusive scheme
-    CSDD,        // Centred space derivative difference
-    lax_wendroff // Lax-Wendroff method
+    diffusive,     // Diffusive scheme
+    csdd,          // Centred space derivative difference
+    lax_wendroff,  // Lax-Wendroff method
+    lax_friedrichs // Lax-Friedrichs method
 };
 const std::vector<std::string> sim_type_str{ "diffusive", "csdd",
-                                             "lax_wendroff" };
+                                             "lax_wendroff", "lax_friedrichs" };
 
 template <std::floating_point T, std::uint64_t N, simulation_type S>
 class fluid_simulator
 {
     public:
-    fluid_simulator( const T dx, const std::array<T, N> & x_init,
+    fluid_simulator( const T x_min, const T x_max,
                      const std::array<T, N> & q_init,
                      const std::array<T, N> & v_init ) :
-        m_dx( dx ), m_x( x_init ) {
+        m_dx( ( x_max - x_min ) / N ) {
+        assert( x_min < x_max );
+        m_x = linspace<T, N, true>( x_min, x_max );
+
         for ( std::uint64_t i{ 0 }; i < N; ++i ) {
             m_q_current[i + 1] = q_init[i];
             m_v_current[i + 1] = v_init[i];
         }
-        m_q_current[0] = m_q_current[1];
-        m_q_current[N - 1] = m_q_current[N - 2];
-        m_v_current[0] = m_v_current[1];
-        m_v_current[N - 1] = m_v_current[N - 2];
 
+        // Copy values into boundary cells
+        m_q_current[0] = m_q_current[1];
+        m_q_current[N + 1] = m_q_current[N];
+
+        m_v_current[0] = m_v_current[1];
+        m_v_current[N + 1] = m_v_current[N];
+
+        // Set previous state = initial state
         m_q_previous = m_q_current;
         m_v_previous = m_v_current;
     }
@@ -280,7 +288,8 @@ class fluid_simulator
     }
 
     void simulate( const T end_time, const T time_step,
-                   const std::uint64_t update_freq ) noexcept;
+                   const std::uint64_t update_freq,
+                   const bool          endpoint = true ) noexcept;
 
     private:
     void update_q( const T dt ) noexcept;
@@ -303,14 +312,14 @@ fluid_simulator<T, N, S>::update_q( const T dt ) noexcept {
                                  + m_q_previous[i + 1];
         }
     }
-    else if constexpr ( S == simulation_type::CSDD ) {
+    else if constexpr ( S == simulation_type::csdd ) {
         for ( std::uint64_t i{ 0 }; i < N; ++i ) {
             m_q_current[i + 1] = -0.5 * ( m_v_previous[i + 1] * dt / m_dx )
                                      * ( m_q_previous[i + 2] - m_q_previous[i] )
                                  + m_q_previous[i + 1];
         }
     }
-    else {
+    else if constexpr ( S == simulation_type::lax_wendroff ) {
         for ( std::uint64_t i{ 0 }; i < N; ++i ) {
             m_q_current[i + 1] =
                 m_q_previous[i + 1]
@@ -320,6 +329,20 @@ fluid_simulator<T, N, S>::update_q( const T dt ) noexcept {
                     / ( m_dx * m_dx ) )
                       * ( m_q_previous[i + 2] - 2 * m_q_previous[i + 1]
                           + m_q_previous[i] );
+        }
+    }
+    else if constexpr ( S == simulation_type::lax_friedrichs ) {
+        const auto f_half = [*this, &dt]( const std::uint64_t i ) {
+            return 0.5
+                       * ( m_q_previous[i] * m_v_previous[i]
+                           + m_q_previous[i + 1] * m_v_previous[i + 1] )
+                   + 0.5 * m_dx * ( m_q_previous[i] - m_q_previous[i + 1] )
+                         / dt;
+        };
+        for ( std::uint64_t i{ 0 }; i < N; ++i ) {
+            m_q_current[i + 1] =
+                m_q_previous[i + 1]
+                + dt * ( f_half( i ) - f_half( i + 1 ) ) / m_dx;
         }
     }
 
@@ -333,10 +356,12 @@ fluid_simulator<T, N, S>::update_q( const T dt ) noexcept {
 template <std::floating_point T, std::uint64_t N, simulation_type S>
 void
 fluid_simulator<T, N, S>::simulate( const T end_time, const T time_step,
-                                    const std::uint64_t n_saves ) noexcept {
+                                    const std::uint64_t n_saves,
+                                    const bool          endpoint ) noexcept {
     const auto n_steps{ static_cast<std::uint64_t>( ( end_time )
                                                     / time_step ) };
-    const auto save_state_freq{ n_steps / ( n_saves - 1 ) };
+    const auto save_state_freq{ n_steps
+                                / ( endpoint ? n_saves - 1 : n_saves ) };
 
     for ( T t{ 0 }; t <= end_time; t += time_step ) {
         update_q( time_step );
@@ -344,8 +369,11 @@ fluid_simulator<T, N, S>::simulate( const T end_time, const T time_step,
         m_q_current[0] = m_q_current[1];
         m_q_current[N + 1] = m_q_current[N];
 
+        m_v_current[0] = m_v_current[1];
+        m_v_current[N + 1] = m_v_current[N];
+
         m_q_previous = m_q_current;
-        m_v_previous = m_q_current;
+        m_v_previous = m_v_current;
 
         const auto i{ static_cast<std::uint64_t>( t / time_step ) };
         if ( i % save_state_freq == 0 ) {
@@ -356,7 +384,7 @@ fluid_simulator<T, N, S>::simulate( const T end_time, const T time_step,
                 std::vector{ x(), q(), v() }, { "x", "q", "v" } );
         }
     }
-    if ( n_saves > 0 ) {
+    if ( n_saves > 0 && endpoint ) {
         write_to_file<T>( std::to_string( end_time ) + "s_"
                               + sim_type_str[static_cast<std::uint64_t>( S )]
                               + "_state.csv",
@@ -401,12 +429,18 @@ main() {
                                std::vector{ cda_xvals, cda_yvals } );
     }
 
+    const double xmin{ 0 };
+    const double xmax{ 400 };
+
     std::array<double, 4000> init_v;
     init_v.fill( 100. );
 
-    std::array<double, 4000> init_q;
-    const double             dx{ 0.1 };
-    for ( std::uint64_t i{ 0 }; i < 400; ++i ) {
+    std::array<double, std::tuple_size_v<decltype( init_v )>> init_q;
+
+    const double dx{ ( xmax - xmin )
+                     / std::tuple_size<decltype( init_q )>::value };
+    for ( std::uint64_t i{ 0 }; i < std::tuple_size<decltype( init_q )>::value;
+          ++i ) {
         const double x{ i * dx };
         if ( x < 10 ) {
             init_q[i] = 1.;
@@ -420,20 +454,26 @@ main() {
     }
 
     const double        end_time{ 3. };
-    const double        dt{ 0.0002 };
-    const std::uint64_t n_saves{ 3 };
+    const double        dt{ 0.00002 };
+    const std::uint64_t n_saves{ 4 };
 
-    const auto xvals = linspace<double, 4000, true>( 0., 400. );
-
-    fluid_simulator<double, 4000, simulation_type::diffusive> diffusive_fs(
-        dx, xvals, init_q, init_v );
+    fluid_simulator<double, std::tuple_size_v<decltype( init_q )>,
+                    simulation_type::diffusive>
+        diffusive_fs( xmin, xmax, init_q, init_v );
     diffusive_fs.simulate( end_time, dt, n_saves );
 
-    fluid_simulator<double, 4000, simulation_type::CSDD> csdd_fs(
-        dx, xvals, init_q, init_v );
+    fluid_simulator<double, std::tuple_size_v<decltype( init_q )>,
+                    simulation_type::csdd>
+        csdd_fs( xmin, xmax, init_q, init_v );
     csdd_fs.simulate( end_time, dt, n_saves );
 
-    fluid_simulator<double, 4000, simulation_type::lax_wendroff>
-        lax_wendroff_fs( dx, xvals, init_q, init_v );
+    fluid_simulator<double, std::tuple_size_v<decltype( init_q )>,
+                    simulation_type::lax_wendroff>
+        lax_wendroff_fs( xmin, xmax, init_q, init_v );
     lax_wendroff_fs.simulate( end_time, dt, n_saves );
+
+    fluid_simulator<double, std::tuple_size_v<decltype( init_q )>,
+                    simulation_type::lax_friedrichs>
+        lax_friedrichs_fs( xmin, xmax, init_q, init_v );
+    lax_friedrichs_fs.simulate( end_time, dt, n_saves );
 }
