@@ -202,10 +202,10 @@ write_to_file( const std::string &                   filename,
 }
 
 // Define "state" & "flux" as fixed size (default = 3) arrays.
-template <typename T>
-using state = std::array<T, 3>;
-template <typename T>
-using flux = state<T>;
+template <typename T, std::size_t Size = 3>
+using state = std::array<T, Size>;
+template <typename T, std::size_t Size = 3>
+using flux = state<T, Size>;
 
 template <typename T, std::size_t Size>
 constexpr std::array<state<T>, Size>
