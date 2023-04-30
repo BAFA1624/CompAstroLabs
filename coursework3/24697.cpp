@@ -150,7 +150,7 @@ VAL_OP( / )
 // clang-format on
 
 // Simple std::array printer
-template <std::floating_point T, std::size_t Size>
+template <typename T, std::size_t Size>
 void
 print_array( const std::array<T, Size> & a ) {
     std::string s{ "array: { " };
@@ -164,10 +164,11 @@ print_array( const std::array<T, Size> & a ) {
 }
 
 // Writes a set of arrays to file
-template <std::floating_point T>
+template <typename T, std::size_t N>
 void
-write_to_file( const std::string & filename, const std::vector<C> & values,
-               const std::vector<std::string> & keys = {} ) {
+write_to_file( const std::string &                   filename,
+               const std::vector<std::array<T, N>> & values,
+               const std::vector<std::string> &      keys = {} ) {
     assert( keys.size() == values.size() || keys.size() == 0 );
 
     // Find shortest array length, limits the number of rows written to file
@@ -199,12 +200,12 @@ write_to_file( const std::string & filename, const std::vector<C> & values,
 }
 
 // Define "state" & "flux" as fixed size (default = 3) arrays.
-template <std::floating_point T, std::size_t Size = 3>
+template <typename T, std::size_t Size = 3>
 using state = std::array<T, Size>;
-template <std::floating_point T, std::size_t Size = 3>
+template <typename T, std::size_t Size = 3>
 using flux = state<T, Size>;
 
-template <std::floating_point T, std::size_t Size>
+template <typename T, std::size_t Size>
 constexpr std::array<state<T>, Size>
 construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
                  const std::array<T, Size> & q3 ) {
@@ -223,8 +224,8 @@ enum class solution_type : std::size_t { lax_friedrichs };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
 
 // Fluid dynamics solver definition
-template <std::floating_point T, std::size_t Size, solution_type Type,
-          boundary_type Lbc, boundary_type Rbc>
+template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
+          boundary_type Rbc>
 class fluid_solver
 {
     public:
@@ -329,8 +330,6 @@ class fluid_solver
     std::array<state<T>, Size + 2> m_state;
     std::array<state<T>, Size + 2> m_previous_state;
 };
-
-
 
 int
 main() {
