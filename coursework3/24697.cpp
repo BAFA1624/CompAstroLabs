@@ -202,10 +202,10 @@ write_to_file( const std::string &                   filename,
 }
 
 // Define "state" & "flux" as fixed size (default = 3) arrays.
-template <typename T, std::size_t Size = 3>
-using state = std::array<T, Size>;
-template <typename T, std::size_t Size = 3>
-using flux = state<T, Size>;
+template <typename T>
+using state = std::array<T, 3>;
+template <typename T>
+using flux = state<T>;
 
 template <typename T, std::size_t Size>
 constexpr std::array<state<T>, Size>
@@ -264,27 +264,29 @@ class fluid_solver
         initialize_state( initial_state );
     }
 
-    [[nodiscard]] constexpr auto & state() const noexcept { return m_state; }
+    [[nodiscard]] constexpr auto & current_state() const noexcept {
+        return m_state;
+    }
     [[nodiscard]] constexpr auto & previous_state() const noexcept {
         return m_previous_state;
     }
     [[nodiscard]] constexpr auto q1() const noexcept {
         std::array<T, Size> q1_array;
-        for ( std::size_t i{ 0 }; i < Size ) {
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q1_array[i] = m_state[i + 1][0];
         }
         return q1_array;
     }
     [[nodiscard]] constexpr auto q2() const noexcept {
         std::array<T, Size> q2_array;
-        for ( std::size_t i{ 0 }; i < Size ) {
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q2_array[i] = m_state[i + 1][1];
         }
         return q2_array;
     }
     [[nodiscard]] constexpr auto q3() const noexcept {
-        std::array<T, Size> q2_array;
-        for ( std::size_t i{ 0 }; i < Size ) {
+        std::array<T, Size> q3_array;
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q3_array[i] = m_state[i + 1][2];
         }
         return q3_array;
