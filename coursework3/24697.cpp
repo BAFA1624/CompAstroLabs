@@ -184,7 +184,7 @@ write_to_file( const std::string &                   filename,
         for ( const auto & key : keys ) { header += key + ","; }
         header.pop_back();
         header += "\n";
-        fp << header;
+        fp << header.cstr();
     }
 
     // Write data
@@ -195,7 +195,7 @@ write_to_file( const std::string &                   filename,
         }
         line.pop_back();
         line += "\n";
-        fp << line;
+        fp << line.cstr();
     }
 }
 
