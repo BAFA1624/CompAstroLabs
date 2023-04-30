@@ -211,7 +211,7 @@ template <typename T, std::size_t Size>
 constexpr std::array<state<T>, Size>
 construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
                  const std::array<T, Size> & q3 ) {
-    std::array<state<T>, Size> state_array;
+    std::array<state<T>, Size> state_array{};
 
     for ( std::size_t i{ 0 }; i < Size; ++i ) {
         state_array[i] = state<T>{ q1[i], q2[i], q3[i] };
