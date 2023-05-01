@@ -142,14 +142,14 @@ memberwise_op( const trivial_op<T> & op, std::array<T, Size> & lhs, const T rhs,
 
 // Required std::array operators
 // clang-format off
-REF_OP( += )
+/*REF_OP( += )
 REF_OP( -= )
 REF_OP( *= )
 REF_OP( /= )
 VAL_OP( + )
 VAL_OP( - )
 VAL_OP( * )
-VAL_OP( / )
+VAL_OP( / )*/
 // clang-format on
 
 
