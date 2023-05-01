@@ -34,47 +34,49 @@
         lhs[2] op rhs[2];                                        \
         return lhs;                                              \
     }
-#define REF_OP_ARR_CONST( op )                                       \
-    template <typename T, std::size_t Size>                          \
-    inline constexpr std::array<T, Size> & operator op(              \
-        std::array<T, Size> & lhs, const T rhs ) {                   \
-        for ( std::size_t i{ 0 }; i < Size; ++i ) { lhs[i] op rhs; } \
-        return lhs;                                                  \
+#define REF_OP_ARR_CONST( op )                            \
+    template <typename T1, typename T2, std::size_t Size> \
+    inline constexpr std::array<T1, Size> & operator op(  \
+        std::array<T1, Size> & lhs, const T2 rhs ) {      \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {       \
+            lhs[i] op static_cast<T1>( rhs );             \
+        }                                                 \
+        return lhs;                                       \
     }
-#define REF_OP_ARR_CONST_3( op )                                             \
-    template <typename T>                                                    \
-    inline constexpr std::array<T, 3> & operator op( std::array<T, 3> & lhs, \
-                                                     const T            rhs ) {         \
-        std::cout << "3" << std::endl;                                       \
-        lhs[0] op rhs;                                                       \
-        lhs[1] op rhs;                                                       \
-        lhs[2] op rhs;                                                       \
-        return lhs;                                                          \
+#define REF_OP_ARR_CONST_3( op )                                               \
+    template <typename T1, typename T2>                                        \
+    inline constexpr std::array<T1, 3> & operator op( std::array<T1, 3> & lhs, \
+                                                      const T2 rhs ) {         \
+        lhs[0] op static_cast<T1>( rhs );                                      \
+        lhs[1] op static_cast<T1>( rhs );                                      \
+        lhs[2] op static_cast<T1>( rhs );                                      \
+        return lhs;                                                            \
     }
-#define REF_OP_CONST_ARR( op )                                      \
-    template <typename T, std::size_t Size>                         \
-    inline constexpr std::array<T, Size> & operator op(             \
-        const T lhs, std::array<T, Size> & rhs ) {                  \
-        for ( std::size_t i = 0; i < Size; ++i ) { rhs[i] op lhs; } \
-        return lhs;                                                 \
+#define REF_OP_CONST_ARR( op )                            \
+    template <typename T1, typename T2, std::size_t Size> \
+    inline constexpr std::array<T2, Size> & operator op(  \
+        const T1 lhs, std::array<T2, Size> & rhs ) {      \
+        for ( std::size_t i = 0; i < Size; ++i ) {        \
+            rhs[i] op static_cast<T2>( lhs );             \
+        }                                                 \
+        return lhs;                                       \
     }
-#define REF_OP_CONST_ARR_3( op )                     \
-    template <typename T>                            \
-    inline constexpr std::array<T, 3> & operator op( \
-        const T lhs, std::array<T, 3> & rhs ) {      \
-        std::cout << "3" << std::endl;               \
-        rhs[0] op lhs;                               \
-        rhs[1] op lhs;                               \
-        rhs[2] op lhs;                               \
-        return rhs;                                  \
+#define REF_OP_CONST_ARR_3( op )                      \
+    template <typename T1, typename T2>               \
+    inline constexpr std::array<T2, 3> & operator op( \
+        const T1 lhs, std::array<T2, 3> & rhs ) {     \
+        rhs[0] op static_cast<T2>( lhs );             \
+        rhs[1] op static_cast<T2>( lhs );             \
+        rhs[2] op static_cast<T2>( lhs );             \
+        return rhs;                                   \
     }
 #define REF_OP( op )         \
-    REF_OP_ARR_ARR( op )     \
     REF_OP_ARR_ARR_3( op )   \
-    REF_OP_ARR_CONST( op )   \
+    REF_OP_ARR_ARR( op )     \
     REF_OP_ARR_CONST_3( op ) \
-    REF_OP_CONST_ARR( op )   \
-    REF_OP_CONST_ARR_3( op )
+    REF_OP_ARR_CONST( op )   \
+    REF_OP_CONST_ARR_3( op ) \
+    REF_OP_CONST_ARR( op )
 
 #define VAL_OP_ARR_ARR( op )                                                 \
     template <typename T, std::size_t Size>                                  \
@@ -94,49 +96,53 @@
         tmp[2] op## = rhs[2];                                          \
         return tmp;                                                    \
     }
-#define VAL_OP_ARR_CONST( op )                                               \
-    template <typename T, std::size_t Size>                                  \
-    inline std::array<T, Size> operator op( const std::array<T, Size> & lhs, \
-                                            const T                     rhs ) {                  \
-        auto tmp{ lhs };                                                     \
-        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = rhs; }     \
-        return tmp;                                                          \
+#define VAL_OP_ARR_CONST( op )                                                 \
+    template <typename T1, typename T2, std::size_t Size>                      \
+    inline std::array<T1, Size> operator op( const std::array<T1, Size> & lhs, \
+                                             const T2 rhs ) {                  \
+        auto tmp{ lhs };                                                       \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {                            \
+            tmp[i] op## = static_cast<T1>( rhs );                              \
+        }                                                                      \
+        return tmp;                                                            \
     }
-#define VAL_OP_ARR_CONST_3( op )                      \
-    template <typename T>                             \
-    inline constexpr std::array<T, 3> operator op(    \
-        const std::array<T, 3> & lhs, const T rhs ) { \
-        auto tmp{ lhs };                              \
-        tmp[0] op## = rhs;                            \
-        tmp[1] op## = rhs;                            \
-        tmp[2] op## = rhs;                            \
-        return tmp;                                   \
+#define VAL_OP_ARR_CONST_3( op )                        \
+    template <typename T1, typename T2>                 \
+    inline constexpr std::array<T1, 3> operator op(     \
+        const std::array<T1, 3> & lhs, const T2 rhs ) { \
+        auto tmp{ lhs };                                \
+        tmp[0] op## = static_cast<T1>( rhs );           \
+        tmp[1] op## = static_cast<T1>( rhs );           \
+        tmp[2] op## = static_cast<T1>( rhs );           \
+        return tmp;                                     \
     }
-#define VAL_OP_CONST_ARR( op )                                           \
-    template <typename T, std::size_t Size>                              \
-    inline constexpr std::array<T, Size> operator op(                    \
-        const T lhs, const std::array<T, Size> & rhs ) {                 \
-        auto tmp{ rhs };                                                 \
-        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = lhs; } \
-        return tmp;                                                      \
+#define VAL_OP_CONST_ARR( op )                             \
+    template <typename T1, typename T2, std::size_t Size>  \
+    inline constexpr std::array<T2, Size> operator op(     \
+        const T1 lhs, const std::array<T2, Size> & rhs ) { \
+        auto tmp{ rhs };                                   \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {        \
+            tmp[i] op## = static_cast<T2>( lhs );          \
+        }                                                  \
+        return tmp;                                        \
     }
-#define VAL_OP_CONST_ARR_3( op )                      \
-    template <typename T>                             \
-    inline constexpr std::array<T, 3> operator op(    \
-        const T lhs, const std::array<T, 3> & rhs ) { \
-        auto tmp{ rhs };                              \
-        tmp[0] op## = lhs;                            \
-        tmp[1] op## = lhs;                            \
-        tmp[2] op## = lhs;                            \
-        return tmp;                                   \
+#define VAL_OP_CONST_ARR_3( op )                        \
+    template <typename T1, typename T2>                 \
+    inline constexpr std::array<T2, 3> operator op(     \
+        const T1 lhs, const std::array<T2, 3> & rhs ) { \
+        auto tmp{ rhs };                                \
+        tmp[0] op## = static_cast<T2>( lhs );           \
+        tmp[1] op## = static_cast<T2>( lhs );           \
+        tmp[2] op## = static_cast<T2>( lhs );           \
+        return tmp;                                     \
     }
 #define VAL_OP( op )         \
-    VAL_OP_ARR_ARR( op )     \
     VAL_OP_ARR_ARR_3( op )   \
-    VAL_OP_ARR_CONST( op )   \
+    VAL_OP_ARR_ARR( op )     \
     VAL_OP_ARR_CONST_3( op ) \
-    VAL_OP_CONST_ARR( op )   \
-    VAL_OP_CONST_ARR_3( op )
+    VAL_OP_ARR_CONST( op )   \
+    VAL_OP_CONST_ARR_3( op ) \
+    VAL_OP_CONST_ARR( op )
 
 // Required std::array operators
 // clang-format off
@@ -225,6 +231,13 @@ pressure( const state<T, Size> & q, const T gamma ) {
 }
 
 template <typename T, std::size_t Size>
+constexpr std::array<T, Size>
+pressure( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
+          const std::array<T, Size> & q3, const T gamma ) {
+    return ( gamma - 1 ) * ( q3 - ( ( q2 * q2 ) / ( 2 * q1 ) ) );
+}
+
+template <typename T, std::size_t Size>
 constexpr flux<T, Size>
 f( const state<T, Size> & q, const T gamma ) {
     const auto p = pressure( q, gamma );
@@ -238,6 +251,12 @@ f( const state<T, Size> & q, const T gamma ) {
     return f;
 }
 
+template <typename T, std::size_t Size>
+constexpr std::array<T, Size>
+v( const std::array<T, Size> & q1, const std::array<T, Size> & q2 ) {
+    return q2 / q1;
+}
+
 template <typename T>
 constexpr inline T
 sound_speed( const state<T> & q, const T gamma ) {
@@ -248,6 +267,13 @@ template <typename T>
 constexpr inline T
 max_wave_speed( const state<T> & q, const T gamma ) {
     return sound_speed( q, gamma ) + std::abs( q[1] / q[0] );
+}
+
+template <typename T, std::size_t Size>
+constexpr std::array<T, Size>
+e( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
+   const std::array<T, Size> & q3, const T gamma ) {
+    return pressure( q1, q2, q3, gamma ) / ( q1 * ( gamma - 1 ) );
 }
 
 template <typename T, std::size_t Size>
@@ -377,11 +403,17 @@ class fluid_solver
         }
 
         if ( save_endpoint ) {
+            const auto Q1{ q1() };
+            const auto Q2{ q2() };
+            const auto Q3{ q3() };
+
             write_to_file<T, Size>(
                 opt_id + std::to_string( endpoint ) + "s_"
                     + solution_string[static_cast<std::size_t>( Type )]
                     + "_state.csv",
-                { m_x, q1(), q2(), q3() }, { "x", "q1", "q2", "q3" } );
+                { m_x, Q1, v( Q1, Q2 ), pressure( Q1, Q2, Q3, gamma ),
+                  e( Q1, Q2, Q3, gamma ) },
+                { "x", "d", "v", "p", "e" } );
         }
 
         return m_state;
