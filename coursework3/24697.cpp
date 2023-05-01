@@ -407,6 +407,6 @@ main() {
     fluid_solver<double, std::tuple_size_v<decltype( initial_state )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
                  boundary_type::reflecting>
-        fs( 0.1, initial_state );
+        fs( 0., 400., 0.1, initial_state );
     std::cout << "Hello world!" << std::endl;
 }
