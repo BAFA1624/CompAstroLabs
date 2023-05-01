@@ -29,12 +29,12 @@ gamma = 1.4
 
 # Shocktube A:
 
-fig = plt.figure()
+figA = plt.figure()
 grid = gs.GridSpec(2, 2)
-ax1 = fig.add_subplot(grid[0, 0])
-ax2 = fig.add_subplot(grid[0, 1])
-ax3 = fig.add_subplot(grid[1, 0])
-ax4 = fig.add_subplot(grid[1, 1])
+ax1 = figA.add_subplot(grid[0, 0])
+ax2 = figA.add_subplot(grid[0, 1])
+ax3 = figA.add_subplot(grid[1, 0])
+ax4 = figA.add_subplot(grid[1, 1])
 
 ax1.plot(a['x'], a['d'])
 ax2.plot(a['x'], a['v'])
@@ -52,8 +52,36 @@ for filename in os.listdir():
         ax3.plot(df['x'], p(df, gamma), c=color, ls='-', label=sim_type)
         ax4.plot(df['x'], p(df, gamma) / (df['q1'].to_numpy()
                  * (gamma - 1)), c=color, ls='-', label=sim_type)
+        os.remove(filename)
 plt.legend()
 plt.show()
 
 # Shocktube B:
 # Shocktube spherical:
+
+figB = plt.figure()
+grid = gs.GridSpec(2, 2)
+ax1 = figB.add_subplot(grid[0, 0])
+ax2 = figB.add_subplot(grid[0, 1])
+ax3 = figB.add_subplot(grid[1, 0])
+ax4 = figB.add_subplot(grid[1, 1])
+
+ax1.plot(b['x'], b['d'])
+ax2.plot(b['x'], b['v'])
+ax3.plot(b['x'], b['p'])
+ax4.plot(b['x'], b['e'])
+
+pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_state\.csv")
+for filename in os.listdir():
+    if pattern.match(filename):
+        sim_type = re.findall(pattern, filename)[0]
+        df = pd.read_csv(filename)
+        pl = ax1.plot(df['x'], d(df), ls='-', label=sim_type)[0]
+        color = pl.get_color()
+        ax2.plot(df['x'], v(df), c=color, ls='-', label=sim_type)
+        ax3.plot(df['x'], p(df, gamma), c=color, ls='-', label=sim_type)
+        ax4.plot(df['x'], p(df, gamma) / (df['q1'].to_numpy()
+                 * (gamma - 1)), c=color, ls='-', label=sim_type)
+        os.remove(filename)
+plt.legend()
+plt.show()

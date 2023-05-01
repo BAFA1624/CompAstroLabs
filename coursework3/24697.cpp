@@ -479,7 +479,6 @@ main() {
     double       v{ 0. };
 
     // Set-up shocktube A:
-
     for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
         const double x = xmin + i * dx;
         if ( x < 0.3 ) {
@@ -500,7 +499,7 @@ main() {
         q3[i] = rho * epsilon + 0.5 * rho * v * v;
     }
 
-    const auto initial_state = construct_state( q1, q2, q3 );
+    auto initial_state = construct_state( q1, q2, q3 );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
@@ -513,4 +512,42 @@ main() {
                  boundary_type::outflow>
         fs_A_lw( xmin, xmax, initial_state );
     fs_A_lw.simulate( 0.2, gamma, true, "A" );
+
+    // Set-up shocktube B:
+    for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
+        const double x = xmin + i * dx;
+        if ( x < 0.8 ) {
+            rho = 1.;
+            v = -19.59745;
+            p = 1000.;
+        }
+        else {
+            rho = 1.;
+            v = -19.59745;
+            p = 0.01;
+        }
+
+        const double epsilon = p / ( rho * ( gamma - 1 ) );
+
+        q1[i] = rho;
+        q2[i] = rho * v;
+        q3[i] = rho * epsilon + 0.5 * rho * v * v;
+    }
+
+    initial_state = construct_state( q1, q2, q3 );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
+                 solution_type::lax_friedrichs, boundary_type::outflow,
+                 boundary_type::outflow>
+        fs_B_lf( xmin, xmax, initial_state );
+    fs_B_lf.simulate( 0.012, gamma, true, "B" );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
+                 solution_type::lax_wendroff, boundary_type::outflow,
+                 boundary_type::outflow>
+        fs_B_lw( xmin, xmax, initial_state );
+    fs_B_lw.simulate( 0.012, gamma, true, "B" );
+
+    // Set-up spherical shocktube:
+    // for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {}
 }
