@@ -151,6 +151,17 @@ VAL_OP( * )
 VAL_OP( / )
 // clang-format on
 
+template <typename T, std::size_t N, bool endpoint = true>
+constexpr std::array<T, N>
+linspace( const T a, const T b ) {
+    const T dx{ ( b - a ) / static_cast<T>( endpoint ? N - 1 : N ) };
+
+    std::array<T, N> arr{};
+    for ( std::size_t i{ 0 }; i < N; ++i ) { arr[i] = a + i * dx; }
+
+    return arr;
+}
+
 // Simple std::array printer
 template <typename T, std::size_t Size>
 void
@@ -208,6 +219,22 @@ template <typename T, std::size_t Size = 3>
 using flux = state<T, Size>;
 
 template <typename T, std::size_t Size>
+constexpr T
+get_pressure( const state<T, Size> & q, const T gamma ) {
+    // (gamma - 1) * rho * epsilon
+    return ( gamma - 1 ) * q[0]
+           * ( ( q[2] / q[0] ) - ( q[1] * q[1] / ( 2 * q[0] * q[0] ) ) );
+}
+
+template <typename T, std::size_t Size>
+constexpr flux<T, Size>
+get_flux( const state<T, Size> & q, const T gamma ) {
+    const auto p = get_pressure( q, gamma );
+    return flux<T, Size>{ q[1], ( q[1] * q[1] / q[0] ) + p,
+                          ( q[2] / q[0] ) * ( q[2] + p ) };
+}
+
+template <typename T, std::size_t Size>
 constexpr std::array<state<T>, Size>
 construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
                  const std::array<T, Size> & q3 ) {
@@ -222,7 +249,7 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 
 // Class enum for selecting between type of algorithm.
 // The value of each enum name is set to the required no. of ghost cells
-enum class solution_type : std::size_t { lax_friedrichs };
+enum class solution_type : std::size_t { lax_friedrichs, law_wendroff };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
 
 // Fluid dynamics solver definition
@@ -231,16 +258,20 @@ template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
 class fluid_solver
 {
     public:
-    fluid_solver( const std::array<state<T>, Size> & initial_state ) {
+    fluid_solver( const T x_min, const T x_max, const T dx,
+                  const std::array<state<T>, Size> & initial_state ) :
+        m_dx( dx ) {
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             m_state[i + 1] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
     }
-    fluid_solver( const std::array<T, Size> & q1,
+    fluid_solver( const T x_min, const T x_max, const T dx,
+                  const std::array<T, Size> & q1,
                   const std::array<T, Size> & q2,
-                  const std::array<T, Size> & q3 ) {
+                  const std::array<T, Size> & q3 ) :
+        m_dx( dx ) {
         const auto initial_state{ construct_state( q1, q2, q3 ) };
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             m_state[i + 1] = initial_state[i];
@@ -250,18 +281,21 @@ class fluid_solver
     }
 
     void initialize_state(
+        const T x_min, const T x_max, const T dx,
         const std::array<state<T>, Size> & initial_state ) noexcept {
+        m_dx = dx;
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             m_state[i + 1] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
     }
-    void intialize_state( const std::array<T, Size> & q1,
+    void intialize_state( const T x_min, const T x_max, const T dx,
+                          const std::array<T, Size> & q1,
                           const std::array<T, Size> & q2,
                           const std::array<T, Size> & q3 ) {
         const auto initial_state{ construct_state( q1, q2, q3 ) };
-        initialize_state( initial_state );
+        initialize_state( x_min, x_max, dx, initial_state );
     }
 
     [[nodiscard]] constexpr auto & current_state() const noexcept {
@@ -292,12 +326,15 @@ class fluid_solver
         return q3_array;
     }
 
-    constexpr auto simulate( const T time_step, const T endpoint,
+    constexpr auto simulate( const T time_step, const T endpoint, const T gamma,
                              const std::size_t n_saves = 0 ) noexcept {
-        switch ( Type ) {
-        case solution_type::lax_friedrichs: {
-        } break;
+        for ( T t{ 0 }; t <= endpoint; t += time_step ) {
+            update_state( time_step, gamma );
+
+            m_previous_state = m_state;
+            apply_boundary_conditions();
         }
+
         return m_state;
     }
 
@@ -329,8 +366,29 @@ class fluid_solver
         }
     };
 
-    // An array of state arrays (3 values) with length Size + 2 * no. of
-    // ghost cells each side
+    constexpr void update_state( const T time_step, const T gamma ) noexcept {
+        if constexpr ( Type == solution_type::lax_friedrichs ) {
+            constexpr auto f_half = [*this, time_step,
+                                     gamma]( const std::size_t i ) {
+                const auto f_i{ get_flux( m_previous_state[i], gamma ) },
+                    f_i_1{ get_flux( m_previous_state[i + 1], gamma ) };
+                return 0.5 * ( f_i + f_i_1 )
+                       + 0.5 * ( m_dx / time_step )
+                             * ( m_previous_state[i]
+                                 - m_previous_state[i + 1] );
+            };
+
+            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+                m_state[i] =
+                    m_previous_state[i]
+                    + ( time_step / m_dx ) * ( f_half( i - 1 ) - f_half( i ) );
+            }
+        }
+    }
+
+    T m_dx;
+    // An array of state arrays (3 values) with length Size + 2, 1 ghost cell
+    // each side
     std::array<state<T>, Size + 2> m_state;
     std::array<state<T>, Size + 2> m_previous_state;
 };
@@ -345,12 +403,10 @@ main() {
     a3.fill( 3.0 );
 
     const auto initial_state = construct_state( a1, a2, a3 );
-    /*for ( std::size_t i{ 0 }; i < initial_state.size(); ++i ) {
-        print_array( initial_state[i] );
-    }*/
 
     fluid_solver<double, std::tuple_size_v<decltype( initial_state )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
                  boundary_type::reflecting>
-        fs( initial_state );
+        fs( 0.1, initial_state );
+    std::cout << "Hello world!" << std::endl;
 }
