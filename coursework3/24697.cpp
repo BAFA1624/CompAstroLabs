@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <functional>
@@ -151,6 +152,7 @@ VAL_OP( * )
 VAL_OP( / )
 // clang-format on
 
+
 template <typename T, std::size_t N, bool endpoint = true>
 constexpr std::array<T, N>
 linspace( const T a, const T b ) {
@@ -164,8 +166,8 @@ linspace( const T a, const T b ) {
 
 // Simple std::array printer
 template <typename T, std::size_t Size>
-void
-print_array( const std::array<T, Size> & a ) {
+std::string
+array_string( const std::array<T, Size> & a ) {
     std::string s{ "array: { " };
     for ( std::uint64_t i{ 0 }; i < Size; ++i ) {
         s += std::to_string( a[i] ) + ", ";
@@ -173,7 +175,7 @@ print_array( const std::array<T, Size> & a ) {
     s.pop_back();
     s.pop_back();
     s += " }";
-    std::cout << s << std::endl;
+    return s;
 }
 
 // Writes a set of arrays to file
@@ -251,6 +253,7 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 // The value of each enum name is set to the required no. of ghost cells
 enum class solution_type : std::size_t { lax_friedrichs, law_wendroff };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
+std::array<std::string, 2> solution_string{ "lax_friedrichs", "lax_wendroff" };
 
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
@@ -332,12 +335,42 @@ class fluid_solver
     [[nodiscard]] constexpr auto x() const noexcept { return m_x; }
 
     constexpr auto simulate( const T time_step, const T endpoint, const T gamma,
-                             const std::size_t n_saves = 0 ) noexcept {
+                             const std::size_t n_saves = 1,
+                             const bool        save_endpoint = true,
+                             std::string       opt_id = "" ) noexcept {
+        auto save_count{ static_cast<std::size_t>( save_endpoint ? 1 : 0 ) };
+        const auto n_steps{ static_cast<std::size_t>( endpoint / time_step ) };
+        const auto save_state_freq{ static_cast<std::size_t>(
+            n_steps / ( save_endpoint ? n_saves - 1 : n_saves ) ) };
+
+        if ( !opt_id.empty() ) {
+            opt_id += "_";
+        }
+
         for ( T t{ 0 }; t <= endpoint; t += time_step ) {
             update_state( time_step, gamma );
 
             m_previous_state = m_state;
+
             apply_boundary_conditions();
+
+            if ( save_count < n_saves
+                 && static_cast<std::size_t>( t / time_step ) % save_state_freq
+                        == 0 ) {
+                write_to_file<double, Size>(
+                    opt_id + std::to_string( t ) + "s_"
+                        + solution_string[static_cast<std::size_t>( Type )]
+                        + "_state.csv",
+                    { m_x, q1(), q2(), q3() }, { "x", "q1", "q2", "q3" } );
+            }
+        }
+
+        if ( n_saves > 0 && save_endpoint ) {
+            write_to_file<double, Size>(
+                opt_id + std::to_string( endpoint ) + "s_"
+                    + solution_string[static_cast<std::size_t>( Type )]
+                    + "_state.csv",
+                { m_x, q1(), q2(), q3() }, { "x", "q1", "q2", "q3" } );
         }
 
         return m_state;
@@ -373,14 +406,16 @@ class fluid_solver
 
     constexpr void update_state( const T time_step, const T gamma ) noexcept {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
-            constexpr auto f_half = [*this, time_step,
-                                     gamma]( const std::size_t i ) {
+            const auto f_half = [*this, time_step,
+                                 gamma]( const std::size_t i ) {
                 const auto f_i{ get_flux( m_previous_state[i], gamma ) },
                     f_i_1{ get_flux( m_previous_state[i + 1], gamma ) };
-                return 0.5 * ( f_i + f_i_1 )
-                       + 0.5 * ( m_dx / time_step )
-                             * ( m_previous_state[i]
-                                 - m_previous_state[i + 1] );
+                const auto f = flux<T>{ 0.5 * ( f_i + f_i_1 )
+                                        + 0.5 * ( m_dx / time_step )
+                                              * ( m_previous_state[i]
+                                                  - m_previous_state[i + 1] ) };
+
+                return f;
             };
 
             for ( std::size_t i{ 1 }; i <= Size; ++i ) {
@@ -401,19 +436,45 @@ class fluid_solver
 
 int
 main() {
-    std::array<double, 5> a1;
-    a1.fill( 1.0 );
-    std::array<double, 5> a2;
-    a2.fill( 2.0 );
-    std::array<double, 5> a3;
-    a3.fill( 3.0 );
+    const double gamma = 1.4;
 
-    const auto initial_state = construct_state( a1, a2, a3 );
+    const auto xarr{ linspace<double, 1000, true>( 0, 1 ) };
+
+    std::array<double, std::tuple_size_v<decltype( xarr )>> q1{};
+    std::array<double, std::tuple_size_v<decltype( xarr )>> q2{};
+    std::array<double, std::tuple_size_v<decltype( xarr )>> q3{};
+    for ( std::uint64_t i{ 0 }; i < xarr.size(); ++i ) {
+        const auto & x = xarr[i];
+        double       rho{ 0 }, v{ 0 }, epsilon{ 0 }, p{ 0 };
+        if ( x < 0.3 ) {
+            rho = 1.;
+            v = 0.75;
+            p = 1.;
+        }
+        else {
+            rho = 0.125;
+            v = 0.;
+            p = 0.1;
+        }
+
+        epsilon = p / ( rho * ( gamma - 1 ) );
+
+        q1[i] = rho;
+        q2[i] = rho * v;
+        q3[i] = rho * epsilon + 0.5 * rho * v * v;
+    }
+
+    const auto initial_state = construct_state( q1, q2, q3 );
 
     fluid_solver<double, std::tuple_size_v<decltype( initial_state )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
-                 boundary_type::reflecting>
-        fs( 0., 400., initial_state );
+                 boundary_type::outflow>
+        fs( 0., 1., initial_state );
 
-    for ( const auto & x : fs.x() ) { std::cout << x << std::endl; }
+
+    const auto state = fs.simulate( 0.00001, 0.2, gamma, 1, true, "A" );
+    /*for ( std::size_t i{ 0 }; i < xarr.size(); ++i ) {
+        std::cout << array_string( initial_state[i] ) << "\t"
+                  << array_string( state[i + 1] ) << std::endl;
+    }*/
 }

@@ -1,0 +1,3 @@
+/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/build/CMakeFiles/24697.dir
+/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/build/CMakeFiles/edit_cache.dir
+/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/build/CMakeFiles/rebuild_cache.dir
