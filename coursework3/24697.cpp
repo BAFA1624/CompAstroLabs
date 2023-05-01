@@ -14,130 +14,128 @@
 //  - Memberwise addition/subtraction by other arrays and floating point values.
 //  - Memberwise multiplication/division by floating point values.
 
-// -----------------------------------------------------------------------------//
-// This isn't strictly necessary, I just think it's REALLY cool.
-// Some template metaprogramming for efficiency
-// When an array, e.g std::array<float, 10>, is +/-/etc, the compiler will
-// recursively unroll the memberwise operation so that a for loop can be avoided
-// which adds "jmp" calls in the generated machine code. This all happens at
-// compile time, rather than at runtime. A small improvement in most cases but
-// sometimes worthwhile by allowing the comiler to make further optimizations.
-// -----------------------------------------------------------------------------//
-template <typename T>
-using trivial_op = std::function<void( T &, const T )>;
-
-// Base cases for template metaprogramming recursive magic
-template <typename T, std::size_t Size>
-void
-memberwise_op( [[maybe_unused]] const trivial_op<T> &       op,
-               [[maybe_unused]] std::array<T, Size> &       lhs,
-               [[maybe_unused]] const std::array<T, Size> & rhs,
-               [[maybe_unused]] std::integral_constant<std::size_t, 0> ) {}
-template <typename T, std::size_t Size>
-void
-memberwise_op( [[maybe_unused]] const trivial_op<T> & op,
-               [[maybe_unused]] std::array<T, Size> & lhs,
-               [[maybe_unused]] const T               rhs,
-               [[maybe_unused]] std::integral_constant<std::size_t, 0> ) {}
-
-template <typename T, std::size_t Size, std::size_t I>
-void
-memberwise_op( const trivial_op<T> & op, std::array<T, Size> & lhs,
-               const std::array<T, Size> & rhs,
-               std::integral_constant<std::size_t, I> ) {
-    op( lhs[I - 1], rhs[I - 1] );
-    memberwise_op( op, lhs, rhs, std::integral_constant<std::size_t, I - 1>() );
-}
-template <typename T, std::size_t Size, std::size_t I>
-void
-memberwise_op( const trivial_op<T> & op, std::array<T, Size> & lhs, const T rhs,
-               std::integral_constant<std::size_t, I> ) {
-    op( lhs[I - 1], rhs );
-    memberwise_op( op, lhs, rhs, std::integral_constant<std::size_t, I - 1>() );
-}
-
 // Some macros to automatically define operator overloads for array + array,
 // array + var, var * array, etc.
-#define OP_FUNC( op ) []( auto & l, const auto r ) { l op r; }
-#define APPLY_MEMBERWISE( op, lhs, rhs, Size )                    \
-    memberwise_op( op, lhs, rhs,                                  \
-                   std::integral_constant<std::size_t, Size>() ); \
-    return lhs;
 
-#define REF_OP_ARR_ARR( op )                                           \
-    template <typename T, std::size_t Size>                            \
-    inline std::array<T, Size> & operator op(                          \
-        std::array<T, Size> & lhs, const std::array<T, Size> & rhs ) { \
-        const std::function<void( T &, const T )> f = OP_FUNC( op );   \
-        APPLY_MEMBERWISE( f, lhs, rhs, Size );                         \
+#define REF_OP_ARR_ARR( op )                                            \
+    template <typename T, std::size_t Size>                             \
+    inline constexpr std::array<T, Size> & operator op(                 \
+        std::array<T, Size> & lhs, const std::array<T, Size> & rhs ) {  \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { lhs[i] op rhs[i]; } \
+        return lhs;                                                     \
     }
-#define REF_OP_ARR_CONST( op )                                                 \
-    template <typename T, std::size_t Size>                                    \
-    inline std::array<T, Size> & operator op( std::array<T, Size> & lhs,       \
-                                              const T               rhs ) {                  \
-        const std::function<void( T &, const T )> f = []( T & l, const T r ) { \
-            l op r;                                                            \
-        };                                                                     \
-        memberwise_op( f, lhs, rhs,                                            \
-                       std::integral_constant<std::size_t, Size>() );          \
-        return lhs;                                                            \
+#define REF_OP_ARR_ARR_3( op )                                   \
+    template <typename T>                                        \
+    inline constexpr std::array<T, 3> & operator op(             \
+        std::array<T, 3> & lhs, const std::array<T, 3> & rhs ) { \
+        lhs[0] op rhs[0];                                        \
+        lhs[1] op rhs[1];                                        \
+        lhs[2] op rhs[2];                                        \
+        return lhs;                                              \
     }
-#define REF_OP_CONST_ARR( op )                                                 \
-    template <typename T, std::size_t Size>                                    \
-    inline std::array<T, Size> & operator op( const T               lhs,       \
-                                              std::array<T, Size> & rhs ) {    \
-        const std::function<void( T &, const T )> f = []( T & l, const T r ) { \
-            l op r;                                                            \
-        };                                                                     \
-        memberwise_op( f, lhs, rhs,                                            \
-                       std::integral_constant<std::size_t, Size>() );          \
-        return lhs;                                                            \
+#define REF_OP_ARR_CONST( op )                                       \
+    template <typename T, std::size_t Size>                          \
+    inline constexpr std::array<T, Size> & operator op(              \
+        std::array<T, Size> & lhs, const T rhs ) {                   \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { lhs[i] op rhs; } \
+        return lhs;                                                  \
     }
-#define REF_OP( op )       \
-    REF_OP_ARR_ARR( op )   \
-    REF_OP_ARR_CONST( op ) \
-    REF_OP_CONST_ARR( op )
+#define REF_OP_ARR_CONST_3( op )                                             \
+    template <typename T>                                                    \
+    inline constexpr std::array<T, 3> & operator op( std::array<T, 3> & lhs, \
+                                                     const T            rhs ) {         \
+        std::cout << "3" << std::endl;                                       \
+        lhs[0] op rhs;                                                       \
+        lhs[1] op rhs;                                                       \
+        lhs[2] op rhs;                                                       \
+        return lhs;                                                          \
+    }
+#define REF_OP_CONST_ARR( op )                                      \
+    template <typename T, std::size_t Size>                         \
+    inline constexpr std::array<T, Size> & operator op(             \
+        const T lhs, std::array<T, Size> & rhs ) {                  \
+        for ( std::size_t i = 0; i < Size; ++i ) { rhs[i] op lhs; } \
+        return lhs;                                                 \
+    }
+#define REF_OP_CONST_ARR_3( op )                     \
+    template <typename T>                            \
+    inline constexpr std::array<T, 3> & operator op( \
+        const T lhs, std::array<T, 3> & rhs ) {      \
+        std::cout << "3" << std::endl;               \
+        rhs[0] op lhs;                               \
+        rhs[1] op lhs;                               \
+        rhs[2] op lhs;                               \
+        return rhs;                                  \
+    }
+#define REF_OP( op )         \
+    REF_OP_ARR_ARR( op )     \
+    REF_OP_ARR_ARR_3( op )   \
+    REF_OP_ARR_CONST( op )   \
+    REF_OP_ARR_CONST_3( op ) \
+    REF_OP_CONST_ARR( op )   \
+    REF_OP_CONST_ARR_3( op )
 
-#define VAL_OP_ARR_ARR( op )                                                   \
-    template <typename T, std::size_t Size>                                    \
-    inline std::array<T, Size> operator op(                                    \
-        const std::array<T, Size> & lhs, const std::array<T, Size> & rhs ) {   \
-        const std::function<void( T &, const T )> f = []( T & l, const T r ) { \
-            l op## = r;                                                        \
-        };                                                                     \
-        std::array<T, Size> tmp{ lhs };                                        \
-        memberwise_op( f, tmp, rhs,                                            \
-                       std::integral_constant<std::size_t, Size>() );          \
-        return tmp;                                                            \
+#define VAL_OP_ARR_ARR( op )                                                 \
+    template <typename T, std::size_t Size>                                  \
+    inline constexpr std::array<T, Size> operator op(                        \
+        const std::array<T, Size> & lhs, const std::array<T, Size> & rhs ) { \
+        auto tmp{ lhs };                                                     \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = rhs[i]; }  \
+        return tmp;                                                          \
     }
-#define VAL_OP_ARR_CONST( op )                                                 \
-    template <typename T, std::size_t Size>                                    \
-    inline std::array<T, Size> operator op( const std::array<T, Size> & lhs,   \
-                                            const T                     rhs ) {                    \
-        const std::function<void( T &, const T )> f = []( T & l, const T r ) { \
-            l op## = r;                                                        \
-        };                                                                     \
-        std::array<T, Size> tmp{ lhs };                                        \
-        memberwise_op( f, tmp, rhs,                                            \
-                       std::integral_constant<std::size_t, Size>() );          \
-        return tmp;                                                            \
+#define VAL_OP_ARR_ARR_3( op )                                         \
+    template <typename T>                                              \
+    inline constexpr std::array<T, 3> operator op(                     \
+        const std::array<T, 3> & lhs, const std::array<T, 3> & rhs ) { \
+        auto tmp{ lhs };                                               \
+        tmp[0] op## = rhs[0];                                          \
+        tmp[1] op## = rhs[1];                                          \
+        tmp[2] op## = rhs[2];                                          \
+        return tmp;                                                    \
     }
-#define VAL_OP_CONST_ARR( op )                                                 \
-    template <typename T, std::size_t Size>                                    \
-    inline std::array<T, Size> operator op(                                    \
-        const T lhs, const std::array<T, Size> & rhs ) {                       \
-        const std::function<void( T &, const T )> f = []( T & l, const T r ) { \
-            l op## = r;                                                        \
-        };                                                                     \
-        std::array<T, Size> tmp{ rhs };                                        \
-        memberwise_op( f, tmp, lhs,                                            \
-                       std::integral_constant<std::size_t, Size>() );          \
-        return tmp;                                                            \
+#define VAL_OP_ARR_CONST( op )                                               \
+    template <typename T, std::size_t Size>                                  \
+    inline std::array<T, Size> operator op( const std::array<T, Size> & lhs, \
+                                            const T                     rhs ) {                  \
+        auto tmp{ lhs };                                                     \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = rhs; }     \
+        return tmp;                                                          \
     }
-#define VAL_OP( op )       \
-    VAL_OP_ARR_ARR( op )   \
-    VAL_OP_ARR_CONST( op ) \
-    VAL_OP_CONST_ARR( op )
+#define VAL_OP_ARR_CONST_3( op )                      \
+    template <typename T>                             \
+    inline constexpr std::array<T, 3> operator op(    \
+        const std::array<T, 3> & lhs, const T rhs ) { \
+        auto tmp{ lhs };                              \
+        tmp[0] op## = rhs;                            \
+        tmp[1] op## = rhs;                            \
+        tmp[2] op## = rhs;                            \
+        return tmp;                                   \
+    }
+#define VAL_OP_CONST_ARR( op )                                           \
+    template <typename T, std::size_t Size>                              \
+    inline constexpr std::array<T, Size> operator op(                    \
+        const T lhs, const std::array<T, Size> & rhs ) {                 \
+        auto tmp{ rhs };                                                 \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = lhs; } \
+        return tmp;                                                      \
+    }
+#define VAL_OP_CONST_ARR_3( op )                      \
+    template <typename T>                             \
+    inline constexpr std::array<T, 3> operator op(    \
+        const T lhs, const std::array<T, 3> & rhs ) { \
+        auto tmp{ rhs };                              \
+        tmp[0] op## = lhs;                            \
+        tmp[1] op## = lhs;                            \
+        tmp[2] op## = lhs;                            \
+        return tmp;                                   \
+    }
+#define VAL_OP( op )         \
+    VAL_OP_ARR_ARR( op )     \
+    VAL_OP_ARR_ARR_3( op )   \
+    VAL_OP_ARR_CONST( op )   \
+    VAL_OP_ARR_CONST_3( op ) \
+    VAL_OP_CONST_ARR( op )   \
+    VAL_OP_CONST_ARR_3( op )
 
 // Required std::array operators
 // clang-format off
@@ -220,18 +218,34 @@ using flux = state<T, Size>;
 
 template <typename T, std::size_t Size>
 constexpr T
-get_pressure( const state<T, Size> & q, const T gamma ) {
-    // (gamma - 1) * rho * epsilon
-    return ( gamma - 1 ) * q[0]
-           * ( ( q[2] / q[0] ) - ( q[1] * q[1] / ( 2 * q[0] * q[0] ) ) );
+pressure( const state<T, Size> & q, const T gamma ) {
+    return ( gamma - 1 ) * ( q[2] - ( ( q[1] * q[1] ) / ( 2 * q[0] ) ) );
 }
 
 template <typename T, std::size_t Size>
 constexpr flux<T, Size>
-get_flux( const state<T, Size> & q, const T gamma ) {
-    const auto p = get_pressure( q, gamma );
-    return flux<T, Size>{ q[1], ( q[1] * q[1] / q[0] ) + p,
-                          ( q[2] / q[0] ) * ( q[2] + p ) };
+f( const state<T, Size> & q, const T gamma ) {
+    const auto p = pressure( q, gamma );
+    // clang-format off
+    const flux<T> f{
+        q[1],
+        ( q[1] * q[1] / q[0] ) + p,
+        ( q[1] / q[0] ) * ( q[2] + p )
+    };
+    // clang-format on
+    return f;
+}
+
+template <typename T>
+constexpr inline T
+sound_speed( const state<T> & q, const T gamma ) {
+    return std::sqrt( std::abs( gamma * pressure( q, gamma ) / q[0] ) );
+}
+
+template <typename T>
+constexpr inline T
+max_wave_speed( const state<T> & q, const T gamma ) {
+    return sound_speed( q, gamma ) + std::abs( q[1] / q[0] );
 }
 
 template <typename T, std::size_t Size>
@@ -249,8 +263,11 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 
 // Class enum for selecting between type of algorithm.
 // The value of each enum name is set to the required no. of ghost cells
-enum class solution_type : std::size_t { lax_friedrichs, law_wendroff };
+enum class solution_type : std::size_t { lax_friedrichs, lax_wendroff, hll };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
+
+const std::array<std::string, 3> solution_string{ "lax_friedrichs",
+                                                  "lax_wendroff", "hll" };
 
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
@@ -331,13 +348,36 @@ class fluid_solver
     [[nodiscard]] constexpr auto dx() const noexcept { return m_dx; }
     [[nodiscard]] constexpr auto x() const noexcept { return m_x; }
 
-    constexpr auto simulate( const T time_step, const T endpoint, const T gamma,
-                             const std::size_t n_saves = 0 ) noexcept {
+    constexpr auto simulate( const T endpoint, const T gamma,
+                             const bool  save_endpoint = true,
+                             std::string opt_id = "" ) noexcept {
+        if ( !opt_id.empty() ) {
+            opt_id += "_";
+        }
+
+        const auto CFL_condition = [*this, &gamma]() {
+            std::array<T, Size> s_max;
+            for ( std::size_t i{ 0 }; i < Size; ++i ) {
+                s_max[i] = max_wave_speed( m_state[i + 1], gamma );
+            }
+            const auto max = *std::max_element( s_max.cbegin(), s_max.cend() );
+            return 0.3 * m_dx / max;
+        };
+
+        T time_step = CFL_condition();
         for ( T t{ 0 }; t <= endpoint; t += time_step ) {
             update_state( time_step, gamma );
-
             m_previous_state = m_state;
             apply_boundary_conditions();
+            time_step = CFL_condition();
+        }
+
+        if ( save_endpoint ) {
+            write_to_file<T, Size>(
+                opt_id + std::to_string( endpoint ) + "s_"
+                    + solution_string[static_cast<std::size_t>( Type )]
+                    + "_state.csv",
+                { m_x, q1(), q2(), q3() }, { "x", "q1", "q2", "q3" } );
         }
 
         return m_state;
@@ -373,20 +413,40 @@ class fluid_solver
 
     constexpr void update_state( const T time_step, const T gamma ) noexcept {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
-            constexpr auto f_half = [*this, time_step,
-                                     gamma]( const std::size_t i ) {
-                const auto f_i{ get_flux( m_previous_state[i], gamma ) },
-                    f_i_1{ get_flux( m_previous_state[i + 1], gamma ) };
-                return 0.5 * ( f_i + f_i_1 )
-                       + 0.5 * ( m_dx / time_step )
-                             * ( m_previous_state[i]
-                                 - m_previous_state[i + 1] );
+            const auto f_half = [*this, time_step,
+                                 gamma]( const std::size_t i ) {
+                const auto f_i{ f( m_previous_state[i], gamma ) },
+                    f_i_1{ f( m_previous_state[i + 1], gamma ) };
+                // clang-format off
+                const flux<T> f{
+                    0.5 * (f_i + f_i_1 )
+                    + 0.5 * ( m_dx / time_step ) * ( m_previous_state[i] - m_previous_state[i + 1] )
+                };
+                // clang-format on
+                return f;
             };
 
             for ( std::size_t i{ 1 }; i <= Size; ++i ) {
                 m_state[i] =
                     m_previous_state[i]
                     + ( time_step / m_dx ) * ( f_half( i - 1 ) - f_half( i ) );
+            }
+        }
+        else if constexpr ( Type == solution_type::lax_wendroff ) {
+            const auto q_half = [*this, &gamma,
+                                 &time_step]( const std::uint64_t i ) {
+                const auto & q{ m_previous_state[i] };
+                const auto & q_1{ m_previous_state[i + 1] };
+                return 0.5 * ( q + q_1 )
+                       + 0.5 * ( time_step / m_dx )
+                             * ( f( q, gamma ) - f( q_1, gamma ) );
+            };
+
+            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+                m_state[i] = m_previous_state[i]
+                             - ( time_step / m_dx )
+                                   * ( f( q_half( i ), gamma )
+                                       - f( q_half( i - 1 ), gamma ) );
             }
         }
     }
@@ -401,19 +461,52 @@ class fluid_solver
 
 int
 main() {
-    std::array<double, 5> a1;
-    a1.fill( 1.0 );
-    std::array<double, 5> a2;
-    a2.fill( 2.0 );
-    std::array<double, 5> a3;
-    a3.fill( 3.0 );
+    std::array<double, 100>                               q1;
+    std::array<double, std::tuple_size_v<decltype( q1 )>> q2;
+    std::array<double, std::tuple_size_v<decltype( q1 )>> q3;
 
-    const auto initial_state = construct_state( a1, a2, a3 );
+    const double xmin{ 0. };
+    const double xmax{ 1. };
+    const double dx{ ( xmax - xmin ) / std::tuple_size_v<decltype( q1 )> };
 
-    fluid_solver<double, std::tuple_size_v<decltype( initial_state )>,
+    const double gamma{ 1.4 };
+    double       rho{ 0. };
+    double       p{ 0. };
+    double       v{ 0. };
+
+    // Set-up shocktube A:
+
+    for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
+        const double x = xmin + i * dx;
+        if ( x < 0.3 ) {
+            rho = 1.;
+            v = 0.75;
+            p = 1.;
+        }
+        else {
+            rho = 0.125;
+            v = 0.;
+            p = 0.1;
+        }
+
+        const double epsilon = p / ( rho * ( gamma - 1 ) );
+
+        q1[i] = rho;
+        q2[i] = rho * v;
+        q3[i] = rho * epsilon + 0.5 * rho * v * v;
+    }
+
+    const auto initial_state = construct_state( q1, q2, q3 );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
-                 boundary_type::reflecting>
-        fs( 0., 400., initial_state );
+                 boundary_type::outflow>
+        fs_A_lf( xmin, xmax, initial_state );
+    fs_A_lf.simulate( 0.2, gamma, true, "A" );
 
-    for ( const auto & x : fs.x() ) { std::cout << x << std::endl; }
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
+                 solution_type::lax_wendroff, boundary_type::outflow,
+                 boundary_type::outflow>
+        fs_A_lw( xmin, xmax, initial_state );
+    fs_A_lw.simulate( 0.2, gamma, true, "A" );
 }
