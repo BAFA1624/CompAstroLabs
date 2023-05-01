@@ -254,24 +254,25 @@ enum class boundary_type : std::size_t { outflow, reflecting, custom };
 
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
-          boundary_type Rbc>
+          boundary_type Rbc, bool incl_endpoint = true>
 class fluid_solver
 {
     public:
-    fluid_solver( const T x_min, const T x_max, const T dx,
+    fluid_solver( const T x_min, const T x_max,
                   const std::array<state<T>, Size> & initial_state ) :
-        m_dx( dx ) {
+        m_dx( ( x_max - x_min ) / ( incl_endpoint ? Size - 1 : Size ) ),
+        m_x( linspace<T, Size, incl_endpoint>( x_min, x_max ) ) {
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             m_state[i + 1] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
     }
-    fluid_solver( const T x_min, const T x_max, const T dx,
-                  const std::array<T, Size> & q1,
+    fluid_solver( const T x_min, const T x_max, const std::array<T, Size> & q1,
                   const std::array<T, Size> & q2,
                   const std::array<T, Size> & q3 ) :
-        m_dx( dx ) {
+        m_dx( ( x_max - x_min ) / ( incl_endpoint ? Size - 1 : Size ) ),
+        m_x( linspace<T, Size, incl_endpoint>( x_min, x_max ) ) {
         const auto initial_state{ construct_state( q1, q2, q3 ) };
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             m_state[i + 1] = initial_state[i];
@@ -281,21 +282,23 @@ class fluid_solver
     }
 
     void initialize_state(
-        const T x_min, const T x_max, const T dx,
+        const T x_min, const T x_max,
         const std::array<state<T>, Size> & initial_state ) noexcept {
-        m_dx = dx;
+        m_dx = ( x_max - x_min ) / ( incl_endpoint ? Size - 1 : Size );
+        m_x = linspace<T, Size, incl_endpoint>( x_min, x_max );
+
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             m_state[i + 1] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
     }
-    void intialize_state( const T x_min, const T x_max, const T dx,
+    void intialize_state( const T x_min, const T x_max,
                           const std::array<T, Size> & q1,
                           const std::array<T, Size> & q2,
                           const std::array<T, Size> & q3 ) {
         const auto initial_state{ construct_state( q1, q2, q3 ) };
-        initialize_state( x_min, x_max, dx, initial_state );
+        initialize_state( x_min, x_max, initial_state );
     }
 
     [[nodiscard]] constexpr auto & current_state() const noexcept {
@@ -325,6 +328,8 @@ class fluid_solver
         }
         return q3_array;
     }
+    [[nodiscard]] constexpr auto dx() const noexcept { return m_dx; }
+    [[nodiscard]] constexpr auto x() const noexcept { return m_x; }
 
     constexpr auto simulate( const T time_step, const T endpoint, const T gamma,
                              const std::size_t n_saves = 0 ) noexcept {
@@ -391,6 +396,7 @@ class fluid_solver
     // each side
     std::array<state<T>, Size + 2> m_state;
     std::array<state<T>, Size + 2> m_previous_state;
+    std::array<T, Size>            m_x;
 };
 
 int
@@ -407,6 +413,7 @@ main() {
     fluid_solver<double, std::tuple_size_v<decltype( initial_state )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
                  boundary_type::reflecting>
-        fs( 0., 400., 0.1, initial_state );
-    std::cout << "Hello world!" << std::endl;
+        fs( 0., 400., initial_state );
+
+    for ( const auto & x : fs.x() ) { std::cout << x << std::endl; }
 }
