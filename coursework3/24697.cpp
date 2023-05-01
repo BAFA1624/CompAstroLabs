@@ -140,14 +140,14 @@
 
 // Required std::array operators
 // clang-format off
-/*REF_OP( += )
+REF_OP( += )
 REF_OP( -= )
 REF_OP( *= )
 REF_OP( /= )
 VAL_OP( + )
 VAL_OP( - )
 VAL_OP( * )
-VAL_OP( / )*/
+VAL_OP( / )
 // clang-format on
 
 
@@ -271,8 +271,6 @@ enum class boundary_type : std::size_t { outflow, reflecting, custom };
 const std::array<std::string, 3> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll" };
 
-const std::array<std::string, 3> solution_string{ "lax_friedrichs",
-                                                  "lax_wendroff", "hll" };
 
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
@@ -502,7 +500,6 @@ main() {
         q3[i] = rho * epsilon + 0.5 * rho * v * v;
     }
 
-    const auto initial_state = construct_state( q1, q2, q3 );
     const auto initial_state = construct_state( q1, q2, q3 );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
