@@ -288,7 +288,7 @@ class fluid_simulator
     }
 
     void simulate( const T end_time, const T time_step,
-                   const std::uint64_t update_freq,
+                   const std::uint64_t n_saves,
                    const bool          endpoint = true ) noexcept;
 
     private:

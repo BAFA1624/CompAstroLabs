@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <functional>
@@ -139,15 +140,16 @@
 
 // Required std::array operators
 // clang-format off
-REF_OP( += )
+/*REF_OP( += )
 REF_OP( -= )
 REF_OP( *= )
 REF_OP( /= )
 VAL_OP( + )
 VAL_OP( - )
 VAL_OP( * )
-VAL_OP( / )
+VAL_OP( / )*/
 // clang-format on
+
 
 template <typename T, std::size_t N, bool endpoint = true>
 constexpr std::array<T, N>
@@ -162,8 +164,8 @@ linspace( const T a, const T b ) {
 
 // Simple std::array printer
 template <typename T, std::size_t Size>
-void
-print_array( const std::array<T, Size> & a ) {
+std::string
+array_string( const std::array<T, Size> & a ) {
     std::string s{ "array: { " };
     for ( std::uint64_t i{ 0 }; i < Size; ++i ) {
         s += std::to_string( a[i] ) + ", ";
@@ -171,7 +173,7 @@ print_array( const std::array<T, Size> & a ) {
     s.pop_back();
     s.pop_back();
     s += " }";
-    std::cout << s << std::endl;
+    return s;
 }
 
 // Writes a set of arrays to file
@@ -265,6 +267,9 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 // The value of each enum name is set to the required no. of ghost cells
 enum class solution_type : std::size_t { lax_friedrichs, lax_wendroff, hll };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
+
+const std::array<std::string, 3> solution_string{ "lax_friedrichs",
+                                                  "lax_wendroff", "hll" };
 
 const std::array<std::string, 3> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll" };
@@ -368,6 +373,7 @@ class fluid_solver
         for ( T t{ 0 }; t <= endpoint; t += time_step ) {
             update_state( time_step, gamma );
             m_previous_state = m_state;
+
             apply_boundary_conditions();
             time_step = CFL_condition();
         }
@@ -496,6 +502,7 @@ main() {
         q3[i] = rho * epsilon + 0.5 * rho * v * v;
     }
 
+    const auto initial_state = construct_state( q1, q2, q3 );
     const auto initial_state = construct_state( q1, q2, q3 );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,

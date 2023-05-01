@@ -25,10 +25,13 @@ b = pd.read_csv("../shock_b.txt", delimiter='\s+')
 # X resolution: 10000
 spherical = pd.read_csv("../shock_sphere.txt", delimiter='\t', header=3)
 
+<< << << < HEAD
 
 gamma = 1.4
 
 
+== == == =
+>>>>>> > 1342a9308aeae334d0ea9b2a454dae51ed33130b
 # Shocktube A:
 
 fig = plt.figure()
