@@ -14,15 +14,8 @@ def v(df):
     return df['q2'].to_numpy() / df['q1'].to_numpy()
 
 
-def epsilon(df):
-    q1 = df['q1'].to_numpy()
-    q2 = df['q2'].to_numpy()
-    q3 = df['q3'].to_numpy()
-    return (q3 / q1) - ((q2**2) / (2 * q1**2))
-
-
-def p(df):
-    return 0.4 * df['q1'].to_numpy() * epsilon(df)
+def p(df, gamma):
+    return (gamma - 1) * (df['q3'].to_numpy() - ((df['q2'].to_numpy()**2) / (2*df['q1'].to_numpy())))
 
 
 a = pd.read_csv("../shock_a.txt", delimiter='\s+')
@@ -32,6 +25,13 @@ b = pd.read_csv("../shock_b.txt", delimiter='\s+')
 # X resolution: 10000
 spherical = pd.read_csv("../shock_sphere.txt", delimiter='\t', header=3)
 
+<< << << < HEAD
+
+gamma = 1.4
+
+
+== == == =
+>>>>>> > 1342a9308aeae334d0ea9b2a454dae51ed33130b
 # Shocktube A:
 
 fig = plt.figure()
@@ -51,11 +51,13 @@ for filename in os.listdir():
     if pattern.match(filename):
         sim_type = re.findall(pattern, filename)[0]
         df = pd.read_csv(filename)
-        ax1.plot(df['x'], d(df), 'r--', label=sim_type)
-        ax2.plot(df['x'], v(df), 'r--', label=sim_type)
-        ax3.plot(df['x'], p(df), 'r--', label=sim_type)
-        ax4.plot(df['x'], epsilon(df), 'r--', label=sim_type)
-
+        pl = ax1.plot(df['x'], d(df), ls='-', label=sim_type)[0]
+        color = pl.get_color()
+        ax2.plot(df['x'], v(df), c=color, ls='-', label=sim_type)
+        ax3.plot(df['x'], p(df, gamma), c=color, ls='-', label=sim_type)
+        ax4.plot(df['x'], p(df, gamma) / (df['q1'].to_numpy()
+                 * (gamma - 1)), c=color, ls='-', label=sim_type)
+plt.legend()
 plt.show()
 
 # Shocktube B:
