@@ -251,6 +251,12 @@ f( const state<T, Size> & q, const T gamma ) {
     return f;
 }
 
+template <typename T>
+constexpr inline T
+v( const state<T> & q ) {
+    return q[1] / q[0];
+}
+
 template <typename T, std::size_t Size>
 constexpr std::array<T, Size>
 v( const std::array<T, Size> & q1, const std::array<T, Size> & q2 ) {
@@ -260,7 +266,7 @@ v( const std::array<T, Size> & q1, const std::array<T, Size> & q2 ) {
 template <typename T>
 constexpr inline T
 sound_speed( const state<T> & q, const T gamma ) {
-    return std::sqrt( std::abs( gamma * pressure( q, gamma ) / q[0] ) );
+    return std::sqrt( gamma * pressure( q, gamma ) / q[0] );
 }
 
 template <typename T>
@@ -380,6 +386,9 @@ class fluid_solver
     constexpr auto simulate( const T endpoint, const T gamma,
                              const bool  save_endpoint = true,
                              std::string opt_id = "" ) noexcept {
+        std::cout << solution_string[static_cast<std::size_t>( Type )]
+                  << std::endl;
+
         if ( !opt_id.empty() ) {
             opt_id += "_";
         }
@@ -397,7 +406,6 @@ class fluid_solver
         for ( T t{ 0 }; t <= endpoint; t += time_step ) {
             update_state( time_step, gamma );
             m_previous_state = m_state;
-
             apply_boundary_conditions();
             time_step = CFL_condition();
         }
@@ -485,6 +493,60 @@ class fluid_solver
                                        - f( q_half( i - 1 ), gamma ) );
             }
         }
+        else if constexpr ( Type == solution_type::hll ) {
+            const auto f_HLL = [*this,
+                                &gamma]( const std::size_t i ) -> flux<T> {
+                const auto &U_L{ m_previous_state[i - 1] },
+                    U_R{ m_previous_state[i] };
+
+                const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
+
+                const auto c_L{ sound_speed( U_L, gamma ) },
+                    c_R{ sound_speed( U_R, gamma ) };
+
+                const auto p_L{ pressure( U_L, gamma ) },
+                    p_R{ pressure( U_R, gamma ) };
+                const auto p_star{ 0.5 * ( p_L + p_R )
+                                   - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
+                                         * ( c_R - c_L ) };
+
+                const auto q_L{ p_star <= p_L ?
+                                    1 :
+                                    std::sqrt( 1
+                                               + ( gamma + 1 )
+                                                     * ( ( p_star / p_L ) - 1 )
+                                                     / ( 2 * gamma ) ) };
+                const auto q_R{ p_star <= p_R ?
+                                    1 :
+                                    std::sqrt( 1
+                                               + ( gamma + 1 )
+                                                     * ( ( p_star / p_R ) - 1 )
+                                                     / ( 2 * gamma ) ) };
+
+                const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
+
+                const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
+                const auto F_HLL{ ( S_R * F_L - S_L * F_R
+                                    + S_L * S_R * ( U_R - U_L ) )
+                                  / ( S_R - S_L ) };
+
+                if ( S_L > 0 ) {
+                    return F_L;
+                }
+                else if ( S_R > 0 && S_L < 0 ) {
+                    return F_HLL;
+                }
+                else if ( S_R < 0 ) {
+                    return F_R;
+                }
+            };
+
+            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+                const auto f_minus{ f_HLL( i ) }, f_plus{ f_HLL( i + 1 ) };
+                m_state[i] = m_previous_state[i]
+                             - ( time_step / m_dx ) * ( f_plus - f_minus );
+            }
+        }
     }
 
     T m_dx;
@@ -545,6 +607,11 @@ main() {
         fs_A_lw( xmin, xmax, initial_state );
     fs_A_lw.simulate( 0.2, gamma, true, "A" );
 
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
+                 boundary_type::outflow, boundary_type::outflow>
+        fs_A_hll( xmin, xmax, initial_state );
+    fs_A_hll.simulate( 0.2, gamma, true, "A" );
+
     // Set-up shocktube B:
     for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
         const double x = xmin + i * dx;
@@ -580,5 +647,24 @@ main() {
         fs_B_lw( xmin, xmax, initial_state );
     fs_B_lw.simulate( 0.012, gamma, true, "B" );
 
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
+                 boundary_type::outflow, boundary_type::outflow>
+        fs_B_hll( xmin, xmax, initial_state );
+    fs_B_hll.simulate( 0.012, gamma, true, "B" );
+
     // Set-up spherical shocktube:
+    for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
+        const double r{ xmin + i * dx };
+
+        if ( r < 0.4 ) {
+            rho = 1.;
+            p = 1.;
+            v = 0.;
+        }
+        else {
+            rho = 0.125;
+            p = 0.1;
+            v = 0.;
+        }
+    }
 }

@@ -24,24 +24,24 @@ ax2 = figA.add_subplot(grid[0, 1])
 ax3 = figA.add_subplot(grid[1, 0])
 ax4 = figA.add_subplot(grid[1, 1])
 
-ax1.plot(a['x'], a['d'])
-ax2.plot(a['x'], a['v'])
-ax3.plot(a['x'], a['p'])
-ax4.plot(a['x'], a['e'])
+ax1.plot(a['x'], a['d'], 'k-')
+ax2.plot(a['x'], a['v'], 'k-')
+ax3.plot(a['x'], a['p'], 'k-')
+ax4.plot(a['x'], a['e'], 'k-')
 
 pattern = re.compile(r"A_[\d]*\.[\d]*s_([\w]+)_state\.csv")
 for filename in os.listdir():
-    if pattern.match(filename):
+    if pattern.match(f"{filename}"):
+        print(f"Plotting: {filename}")
         sim_type = re.findall(pattern, filename)[0]
         df = pd.read_csv(filename)
-        pl = ax1.plot(df['x'], df['d'], ls='-', label=sim_type)[0]
+        pl = ax1.plot(df['x'], df['d'], ls='--', label=sim_type)[0]
         color = pl.get_color()
-        ax2.plot(df['x'], df['v'], c=color, ls='-', label=sim_type)
-        ax3.plot(df['x'], df['p'], c=color, ls='-', label=sim_type)
-        ax4.plot(df['x'], df['e'], c=color, ls='-', label=sim_type)
+        ax2.plot(df['x'], df['v'], c=color, ls='--', label=sim_type)
+        ax3.plot(df['x'], df['p'], c=color, ls='--', label=sim_type)
+        ax4.plot(df['x'], df['e'], c=color, ls='--', label=sim_type)
         os.remove(filename)
 plt.legend()
-plt.show()
 
 # Shocktube B:
 # Shocktube spherical:
@@ -53,21 +53,22 @@ ax2 = figB.add_subplot(grid[0, 1])
 ax3 = figB.add_subplot(grid[1, 0])
 ax4 = figB.add_subplot(grid[1, 1])
 
-ax1.plot(b['x'], b['d'])
-ax2.plot(b['x'], b['v'])
-ax3.plot(b['x'], b['p'])
-ax4.plot(b['x'], b['e'])
+ax1.plot(b['x'], b['d'], 'k-')
+ax2.plot(b['x'], b['v'], 'k-')
+ax3.plot(b['x'], b['p'], 'k-')
+ax4.plot(b['x'], b['e'], 'k-')
 
 pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_state\.csv")
 for filename in os.listdir():
     if pattern.match(filename):
+        print(f"Plotting: {filename}")
         sim_type = re.findall(pattern, filename)[0]
         df = pd.read_csv(filename)
-        pl = ax1.plot(df['x'], df['d'], ls='-', label=sim_type)[0]
+        pl = ax1.plot(df['x'], df['d'], ls='--', label=sim_type)[0]
         color = pl.get_color()
-        ax2.plot(df['x'], df['v'], c=color, ls='-', label=sim_type)
-        ax3.plot(df['x'], df['p'], c=color, ls='-', label=sim_type)
-        ax4.plot(df['x'], df['e'], c=color, ls='-', label=sim_type)
+        ax2.plot(df['x'], df['v'], c=color, ls='--', label=sim_type)
+        ax3.plot(df['x'], df['p'], c=color, ls='--', label=sim_type)
+        ax4.plot(df['x'], df['e'], c=color, ls='--', label=sim_type)
         os.remove(filename)
 plt.legend()
 plt.show()
