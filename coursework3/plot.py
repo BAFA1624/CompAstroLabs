@@ -119,4 +119,4 @@ for filename in os.listdir():
 plt.legend()
 plt.savefig("shocktube_S.png")
 
-# plt.show()
+plt.show()

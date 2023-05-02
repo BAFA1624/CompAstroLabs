@@ -277,6 +277,12 @@ max_wave_speed( const state<T> & q, const T gamma ) {
     return sound_speed( q, gamma ) + std::abs( q[1] / q[0] );
 }
 
+template <typename T>
+constexpr inline T
+e( const state<T> & q, const T gamma ) {
+    return pressure( q, gamma ) / ( q[0] * ( gamma - 1 ) );
+}
+
 template <typename T, std::size_t Size>
 constexpr std::array<T, Size>
 e( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
@@ -299,12 +305,18 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 
 // Class enum for selecting between type of algorithm.
 // The value of each enum name is set to the required no. of ghost cells
-enum class solution_type : std::size_t { lax_friedrichs, lax_wendroff, hll };
+enum class solution_type : std::size_t {
+    lax_friedrichs,
+    lax_wendroff,
+    hll,
+    hllc
+};
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
 enum class coordinate_type : std::size_t { cartesian, spherical };
 
-const std::array<std::string, 3> solution_string{ "lax_friedrichs",
-                                                  "lax_wendroff", "hll" };
+const std::array<std::string, 4> solution_string{ "lax_friedrichs",
+                                                  "lax_wendroff", "hll",
+                                                  "hllc" };
 
 
 // Fluid dynamics solver definition
@@ -406,10 +418,9 @@ class fluid_solver
             const auto max = *std::max_element( s_max.cbegin(), s_max.cend() );
             return 0.3 * m_dx / max;
         };
-        std::size_t count{ 0 };
-        T           time_step = CFL_condition();
+
+        T time_step = CFL_condition();
         for ( T t{ 0 }; t <= endpoint; t += time_step ) {
-            count++;
             update_state( time_step, gamma );
 
             if constexpr ( Coords == coordinate_type::spherical ) {
@@ -430,7 +441,6 @@ class fluid_solver
             apply_boundary_conditions();
             time_step = CFL_condition();
         }
-        std::cout << "Count: " << count << std::endl;
 
         if ( save_endpoint ) {
             const auto Q1{ q1() };
@@ -516,22 +526,23 @@ class fluid_solver
             }
         }
         else if constexpr ( Type == solution_type::hll ) {
-            const auto f_HLL = [*this,
+            const auto f_hll = [*this,
                                 &gamma]( const std::size_t i ) -> flux<T> {
+                // L & R states
                 const auto &U_L{ m_previous_state[i - 1] },
                     U_R{ m_previous_state[i] };
-
+                // L & R velocities
                 const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
-
+                // L & R sound speed
                 const auto c_L{ sound_speed( U_L, gamma ) },
                     c_R{ sound_speed( U_R, gamma ) };
-
+                // L, R, & * pressure
                 const auto p_L{ pressure( U_L, gamma ) },
                     p_R{ pressure( U_R, gamma ) };
                 const auto p_star{ 0.5 * ( p_L + p_R )
                                    - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
                                          * ( c_R - c_L ) };
-
+                // L & R q
                 const auto q_L{ p_star <= p_L ?
                                     1 :
                                     std::sqrt( 1
@@ -544,9 +555,10 @@ class fluid_solver
                                                + ( gamma + 1 )
                                                      * ( ( p_star / p_R ) - 1 )
                                                      / ( 2 * gamma ) ) };
-
+                // L & R wavespeeds
                 const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
 
+                // L, R & HLL fluxes
                 const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
                 const auto F_HLL{ ( S_R * F_L - S_L * F_R
                                     + S_L * S_R * ( U_R - U_L ) )
@@ -558,13 +570,119 @@ class fluid_solver
                 else if ( S_R > 0 && S_L < 0 ) {
                     return F_HLL;
                 }
-                else {
+                else if ( S_R < 0 ) {
                     return F_R;
+                }
+                else {
+                    std::cout << "ERROR: Invalid branch reached." << std::endl;
+                    assert( false );
                 }
             };
 
             for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-                const auto f_minus{ f_HLL( i ) }, f_plus{ f_HLL( i + 1 ) };
+                const auto f_minus{ f_hll( i ) }, f_plus{ f_hll( i + 1 ) };
+                m_state[i] = m_previous_state[i]
+                             - ( time_step / m_dx ) * ( f_plus - f_minus );
+            }
+        }
+        else if ( Type == solution_type::hllc ) {
+            const auto f_hllc = [*this,
+                                 &gamma]( const std::size_t i ) -> flux<T> {
+                // L & R states
+                const auto &Q_L{ m_previous_state[i - 1] },
+                    Q_R{ m_previous_state[i] };
+                // L & R velocities
+                const auto v_L{ v( Q_L ) }, v_R{ v( Q_R ) };
+                // L & R sound speed
+                const auto c_L{ sound_speed( Q_L, gamma ) },
+                    c_R{ sound_speed( Q_R, gamma ) };
+                // L, R, & * pressure
+                const auto p_L{ pressure( Q_L, gamma ) },
+                    p_R{ pressure( Q_R, gamma ) };
+                // clang-format off
+                // exponent z
+                const T z = ( gamma - 1 ) / ( 2 * gamma );
+                // p_star according to paper
+                const auto p_star{
+                    std::pow(
+                        (c_L + c_R - 0.5 * (gamma - 1) * (v_R - v_L))
+                        /
+                        ((c_L / std::pow(pressure(Q_L, gamma), z)) + (c_R / std::pow(pressure(Q_R, gamma), z))),
+                        1 / z
+                    )
+                };
+                // clang-format on
+                // L & R q
+                const auto q_L{ p_star <= p_L ?
+                                    1 :
+                                    std::sqrt( 1
+                                               + ( gamma + 1 )
+                                                     * ( ( p_star / p_L ) - 1 )
+                                                     / ( 2 * gamma ) ) };
+                const auto q_R{ p_star <= p_R ?
+                                    1 :
+                                    std::sqrt( 1
+                                               + ( gamma + 1 )
+                                                     * ( ( p_star / p_R ) - 1 )
+                                                     / ( 2 * gamma ) ) };
+                // L & R wavespeeds
+                const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
+                // clang-format off
+                const auto S_star{
+                    ( p_R - p_L + Q_L[1] * ( S_L - v_L ) - Q_R[1] * ( S_R - v_R ) )
+                    /
+                    ( Q_L[0] * ( S_L - v_L ) - Q_R[0] * ( S_R - v_R ))
+                };
+                // clang-format on
+
+                // L* & R* Q
+                const auto Q_L_prefactor{ Q_L[0] * ( S_L - v_L )
+                                          / ( S_L - S_star ) },
+                    Q_R_prefactor{ Q_R[0] * ( S_R - v_R ) / ( S_R - S_star ) };
+                // clang-format off
+                const auto Q_L_star{
+                    Q_L_prefactor
+                    * state<T>{
+                        1,
+                        S_star,
+                        ( Q_L[2] / Q_L[0] )
+                          + ( S_star - v_L )
+                              * ( S_star
+                                  + ( p_L ) / ( Q_L[0] * ( S_L - v_L ) ) ) }
+                };
+                const auto Q_R_star{
+                    Q_R_prefactor
+                    * state<T>{ 1, S_star,
+                                ( Q_R[2] / Q_R[0] )
+                                    + ( S_star - v_R )
+                                          * ( S_star
+                                              + ( p_R )
+                                                    / ( Q_R[0]
+                                                        * ( S_R - v_R ) ) ) }
+                };
+                // clang-format on
+
+                const auto F_L{ f( Q_L, gamma ) }, F_R{ f( Q_R, gamma ) };
+                if ( 0 <= S_L ) {
+                    return F_L;
+                }
+                else if ( S_L <= 0 && 0 <= S_star ) {
+                    return F_L + S_L * ( Q_L_star - Q_L );
+                }
+                else if ( S_star <= 0 && 0 <= S_R ) {
+                    return F_R + S_R * ( Q_R_star - Q_R );
+                }
+                else if ( S_R <= 0 ) {
+                    return F_R;
+                }
+                else {
+                    std::cout << "ERROR: Invalid branch reached." << std::endl;
+                    assert( false );
+                }
+            };
+
+            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+                const auto f_minus{ f_hllc( i ) }, f_plus{ f_hllc( i + 1 ) };
                 m_state[i] = m_previous_state[i]
                              - ( time_step / m_dx ) * ( f_plus - f_minus );
             }
@@ -634,6 +752,11 @@ main() {
         fs_A_hll( xmin, xmax, initial_state );
     fs_A_hll.simulate( 0.2, gamma, true, "A" );
 
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
+                 boundary_type::outflow, boundary_type::outflow>
+        fs_A_hllc( xmin, xmax, initial_state );
+    fs_A_hllc.simulate( 0.2, gamma, true, "A" );
+
     // Set-up shocktube B:
     for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
         const double x = xmin + i * dx;
@@ -673,6 +796,11 @@ main() {
                  boundary_type::outflow, boundary_type::outflow>
         fs_B_hll( xmin, xmax, initial_state );
     fs_B_hll.simulate( 0.012, gamma, true, "B" );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
+                 boundary_type::outflow, boundary_type::outflow>
+        fs_B_hllc( xmin, xmax, initial_state );
+    fs_B_hllc.simulate( 0.012, gamma, true, "B" );
 
     // Set-up spherical shocktube:
     for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
@@ -715,4 +843,10 @@ main() {
                  coordinate_type::spherical>
         fs_spherical_hll( xmin, xmax, initial_state );
     fs_spherical_hll.simulate( 0.25, gamma, true, "S" );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
+                 boundary_type::outflow, boundary_type::outflow,
+                 coordinate_type::spherical>
+        fs_spherical_hllc( xmin, xmax, initial_state );
+    fs_spherical_hllc.simulate( 0.25, gamma, true, "S" );
 }
