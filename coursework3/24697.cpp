@@ -332,12 +332,10 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
     // L & R states
     const auto &U_L{ states[i - 1] }, U_R{ states[i] };
-    if ( i == 0 ) {
-        std::cout << array_string( U_L ) << " " << array_string( U_R )
-                  << std::endl;
-    }
+
     // L & R velocities
     const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
+
     // L & R sound speed
     const auto c_L{ sound_speed( U_L, gamma ) },
         c_R{ sound_speed( U_R, gamma ) };
@@ -360,21 +358,23 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     // L & R wavespeeds
     const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
 
+    const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
     // L, R & HLL fluxes
-    flux<T> F{};
     if ( S_L > 0 ) {
-        F = f( U_L, gamma );
+        return F_L;
     }
     else if ( S_R > 0 && S_L < 0 ) {
-        F = ( S_R * f( U_L, gamma ) - S_L * f( U_R, gamma )
-              + S_L * S_R * ( U_R - U_L ) )
-            / ( S_R - S_L );
+        return ( S_R * F_L - S_L * F_R + S_L * S_R * ( U_R - U_L ) )
+               / ( S_R - S_L );
     }
     else if ( S_R < 0 ) {
-        F = f( U_R, gamma );
+        return F_R;
     }
-
-    return F;
+    else {
+        std::cout << "ERROR: Invalid branch reached." << std::endl;
+        assert( false );
+        return flux<T>{ 0., 0., 0. };
+    }
 }
 
 template <typename T, std::size_t Size>
@@ -610,7 +610,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
             m_state =
                 m_state + time_step * d_state( m_state, t, time_step, gamma );
         }
-        else if constexpr ( Order == approx_order::second ) {
+        else {
             const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
             const auto K2 =
                 time_step * d_state( m_state + K1, t + time_step, gamma );
@@ -693,7 +693,6 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     const T dt, const T gamma ) noexcept {
     fluid_algorithm<T, Size + 2> f_half;
 
-
     std::array<state<T>, Size + 2> delta{};
     for ( std::size_t i{ 1 }; i <= Size; ++i ) {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
@@ -708,13 +707,13 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
         }
         else if constexpr ( Type == solution_type::hll ) {
             delta[i] = -( 1 / m_dx )
-                       * ( hll( states, i, dt, m_dx, gamma )
-                           - hll( states, i + 1, dt, m_dx, gamma ) );
+                       * ( hll( states, i + 1, dt, m_dx, gamma )
+                           - hll( states, i, dt, m_dx, gamma ) );
         }
         else if constexpr ( Type == solution_type::hllc ) {
             delta[i] = -( 1 / m_dx )
-                       * ( hllc( states, i, dt, m_dx, gamma )
-                           - hllc( states, i + 1, dt, m_dx, gamma ) );
+                       * ( hllc( states, i + 1, dt, m_dx, gamma )
+                           - hllc( states, i, dt, m_dx, gamma ) );
         }
     }
 

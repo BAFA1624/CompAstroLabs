@@ -37,7 +37,6 @@ for filename in os.listdir():
     if pattern.match(f"{filename}"):
         sim_type = re.findall(pattern, filename)[0]
         print(f"Plotting: {filename} - {sim_type}")
-        # if sim_type != "hll" and sim_type != "hllc":
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
                       linewidth=1, label=sim_type)[0]
@@ -72,7 +71,6 @@ for filename in os.listdir():
     if pattern.match(filename):
         sim_type = re.findall(pattern, filename)[0]
         print(f"Plotting: {filename} - {sim_type}")
-        # if sim_type != 'hll' and sim_type != 'hllc':
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
                       linewidth=1, label=sim_type)[0]
@@ -87,7 +85,6 @@ for filename in os.listdir():
             os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_B.png")
-plt.show()
 
 
 # Spherical coords shocktube
@@ -114,7 +111,6 @@ for filename in os.listdir():
     if pattern.match(filename):
         sim_type = re.findall(pattern, filename)[0]
         print(f"Plotting: {filename} - {sim_type}")
-        # if sim_type != 'hll' and sim_type != 'hllc':
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
                       linewidth=1, label=sim_type)[0]
