@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
+#include <cmath>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -360,21 +362,21 @@ class fluid_solver
         return m_previous_state;
     }
     [[nodiscard]] constexpr auto q1() const noexcept {
-        std::array<T, Size> q1_array;
+        std::array<T, Size> q1_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q1_array[i] = m_state[i + 1][0];
         }
         return q1_array;
     }
     [[nodiscard]] constexpr auto q2() const noexcept {
-        std::array<T, Size> q2_array;
+        std::array<T, Size> q2_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q2_array[i] = m_state[i + 1][1];
         }
         return q2_array;
     }
     [[nodiscard]] constexpr auto q3() const noexcept {
-        std::array<T, Size> q3_array;
+        std::array<T, Size> q3_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q3_array[i] = m_state[i + 1][2];
         }
@@ -394,7 +396,7 @@ class fluid_solver
         }
 
         const auto CFL_condition = [*this, &gamma]() {
-            std::array<T, Size> s_max;
+            std::array<T, Size> s_max{};
             for ( std::size_t i{ 0 }; i < Size; ++i ) {
                 s_max[i] = max_wave_speed( m_state[i + 1], gamma );
             }
@@ -559,9 +561,9 @@ class fluid_solver
 
 int
 main() {
-    std::array<double, 100>                               q1;
-    std::array<double, std::tuple_size_v<decltype( q1 )>> q2;
-    std::array<double, std::tuple_size_v<decltype( q1 )>> q3;
+    std::array<double, 100>                               q1{};
+    std::array<double, std::tuple_size_v<decltype( q1 )>> q2{};
+    std::array<double, std::tuple_size_v<decltype( q1 )>> q3{};
 
     const double xmin{ 0. };
     const double xmax{ 1. };
