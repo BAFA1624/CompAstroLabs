@@ -763,23 +763,25 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
-                 boundary_type::outflow>
+                 boundary_type::outflow, approx_order::second>
         fs_A_lf( xmin, xmax, initial_state );
     fs_A_lf.simulate( 0.2, gamma, true, "A" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_wendroff, boundary_type::outflow,
-                 boundary_type::outflow>
+                 boundary_type::outflow, approx_order::second>
         fs_A_lw( xmin, xmax, initial_state );
     fs_A_lw.simulate( 0.2, gamma, true, "A" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
-                 boundary_type::outflow, boundary_type::outflow>
+                 boundary_type::outflow, boundary_type::outflow,
+                 approx_order::second>
         fs_A_hll( xmin, xmax, initial_state );
     fs_A_hll.simulate( 0.2, gamma, true, "A" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
-                 boundary_type::outflow, boundary_type::outflow>
+                 boundary_type::outflow, boundary_type::outflow,
+                 approx_order::second>
         fs_A_hllc( xmin, xmax, initial_state );
     fs_A_hllc.simulate( 0.2, gamma, true, "A" );
 
@@ -808,7 +810,7 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
-                 boundary_type::outflow>
+                 boundary_type::outflow, approx_order::second>
         fs_B_lf( xmin, xmax, initial_state );
     fs_B_lf.simulate( 0.012, gamma, true, "B" );
 
@@ -824,7 +826,8 @@ main() {
     fs_B_hll.simulate( 0.012, gamma, true, "B" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
-                 boundary_type::outflow, boundary_type::outflow>
+                 boundary_type::outflow, boundary_type::outflow,
+                 approx_order::second>
         fs_B_hllc( xmin, xmax, initial_state );
     fs_B_hllc.simulate( 0.012, gamma, true, "B" );
 
@@ -854,21 +857,21 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
-                 boundary_type::outflow, approx_order::first,
+                 boundary_type::outflow, approx_order::second,
                  coordinate_type::spherical>
         fs_spherical_lf( xmin, xmax, initial_state );
     fs_spherical_lf.simulate( 0.25, gamma, true, "S" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_wendroff, boundary_type::outflow,
-                 boundary_type::outflow, approx_order::first,
+                 boundary_type::outflow, approx_order::second,
                  coordinate_type::spherical>
         fs_spherical_lw( xmin, xmax, initial_state );
     fs_spherical_lw.simulate( 0.25, gamma, true, "S" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::first, coordinate_type::spherical>
+                 approx_order::second, coordinate_type::spherical>
         fs_spherical_hll( xmin, xmax, initial_state );
     fs_spherical_hll.simulate( 0.25, gamma, true, "S" );
 
