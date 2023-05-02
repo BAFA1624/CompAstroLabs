@@ -581,5 +581,4 @@ main() {
     fs_B_lw.simulate( 0.012, gamma, true, "B" );
 
     // Set-up spherical shocktube:
-    // for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {}
 }
