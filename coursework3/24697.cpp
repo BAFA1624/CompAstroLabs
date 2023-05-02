@@ -36,40 +36,36 @@
         lhs[2] op rhs[2];                                        \
         return lhs;                                              \
     }
-#define REF_OP_ARR_CONST( op )                            \
-    template <typename T1, typename T2, std::size_t Size> \
-    inline constexpr std::array<T1, Size> & operator op(  \
-        std::array<T1, Size> & lhs, const T2 rhs ) {      \
-        for ( std::size_t i{ 0 }; i < Size; ++i ) {       \
-            lhs[i] op static_cast<T1>( rhs );             \
-        }                                                 \
-        return lhs;                                       \
+#define REF_OP_ARR_CONST( op )                                       \
+    template <typename T1, typename T2, std::size_t Size>            \
+    inline constexpr std::array<T1, Size> & operator op(             \
+        std::array<T1, Size> & lhs, const T2 rhs ) {                 \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { lhs[i] op rhs; } \
+        return lhs;                                                  \
     }
 #define REF_OP_ARR_CONST_3( op )                                               \
     template <typename T1, typename T2>                                        \
     inline constexpr std::array<T1, 3> & operator op( std::array<T1, 3> & lhs, \
                                                       const T2 rhs ) {         \
-        lhs[0] op static_cast<T1>( rhs );                                      \
-        lhs[1] op static_cast<T1>( rhs );                                      \
-        lhs[2] op static_cast<T1>( rhs );                                      \
+        lhs[0] op rhs;                                                         \
+        lhs[1] op rhs;                                                         \
+        lhs[2] op rhs;                                                         \
         return lhs;                                                            \
     }
-#define REF_OP_CONST_ARR( op )                            \
-    template <typename T1, typename T2, std::size_t Size> \
-    inline constexpr std::array<T2, Size> & operator op(  \
-        const T1 lhs, std::array<T2, Size> & rhs ) {      \
-        for ( std::size_t i = 0; i < Size; ++i ) {        \
-            rhs[i] op static_cast<T2>( lhs );             \
-        }                                                 \
-        return lhs;                                       \
+#define REF_OP_CONST_ARR( op )                                      \
+    template <typename T1, typename T2, std::size_t Size>           \
+    inline constexpr std::array<T2, Size> & operator op(            \
+        const T1 lhs, std::array<T2, Size> & rhs ) {                \
+        for ( std::size_t i = 0; i < Size; ++i ) { rhs[i] op lhs; } \
+        return lhs;                                                 \
     }
 #define REF_OP_CONST_ARR_3( op )                      \
     template <typename T1, typename T2>               \
     inline constexpr std::array<T2, 3> & operator op( \
         const T1 lhs, std::array<T2, 3> & rhs ) {     \
-        rhs[0] op static_cast<T2>( lhs );             \
-        rhs[1] op static_cast<T2>( lhs );             \
-        rhs[2] op static_cast<T2>( lhs );             \
+        rhs[0] op lhs;                                \
+        rhs[1] op lhs;                                \
+        rhs[2] op lhs;                                \
         return rhs;                                   \
     }
 #define REF_OP( op )         \
@@ -103,9 +99,7 @@
     inline std::array<T1, Size> operator op( const std::array<T1, Size> & lhs, \
                                              const T2 rhs ) {                  \
         auto tmp{ lhs };                                                       \
-        for ( std::size_t i{ 0 }; i < Size; ++i ) {                            \
-            tmp[i] op## = static_cast<T1>( rhs );                              \
-        }                                                                      \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = rhs; }       \
         return tmp;                                                            \
     }
 #define VAL_OP_ARR_CONST_3( op )                        \
@@ -113,29 +107,27 @@
     inline constexpr std::array<T1, 3> operator op(     \
         const std::array<T1, 3> & lhs, const T2 rhs ) { \
         auto tmp{ lhs };                                \
-        tmp[0] op## = static_cast<T1>( rhs );           \
-        tmp[1] op## = static_cast<T1>( rhs );           \
-        tmp[2] op## = static_cast<T1>( rhs );           \
+        tmp[0] op## = rhs;                              \
+        tmp[1] op## = rhs;                              \
+        tmp[2] op## = rhs;                              \
         return tmp;                                     \
     }
-#define VAL_OP_CONST_ARR( op )                             \
-    template <typename T1, typename T2, std::size_t Size>  \
-    inline constexpr std::array<T2, Size> operator op(     \
-        const T1 lhs, const std::array<T2, Size> & rhs ) { \
-        auto tmp{ rhs };                                   \
-        for ( std::size_t i{ 0 }; i < Size; ++i ) {        \
-            tmp[i] op## = static_cast<T2>( lhs );          \
-        }                                                  \
-        return tmp;                                        \
+#define VAL_OP_CONST_ARR( op )                                           \
+    template <typename T1, typename T2, std::size_t Size>                \
+    inline constexpr std::array<T2, Size> operator op(                   \
+        const T1 lhs, const std::array<T2, Size> & rhs ) {               \
+        auto tmp{ rhs };                                                 \
+        for ( std::size_t i{ 0 }; i < Size; ++i ) { tmp[i] op## = lhs; } \
+        return tmp;                                                      \
     }
 #define VAL_OP_CONST_ARR_3( op )                        \
     template <typename T1, typename T2>                 \
     inline constexpr std::array<T2, 3> operator op(     \
         const T1 lhs, const std::array<T2, 3> & rhs ) { \
         auto tmp{ rhs };                                \
-        tmp[0] op## = static_cast<T2>( lhs );           \
-        tmp[1] op## = static_cast<T2>( lhs );           \
-        tmp[2] op## = static_cast<T2>( lhs );           \
+        tmp[0] op## = lhs;                              \
+        tmp[1] op## = lhs;                              \
+        tmp[2] op## = lhs;                              \
         return tmp;                                     \
     }
 #define VAL_OP( op )         \
@@ -303,6 +295,179 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
     return state_array;
 }
 
+
+template <typename T, std::size_t Size>
+using fluid_algorithm =
+    std::function<flux<T>( const std::array<T, Size> &, const std::size_t,
+                           const T, const T, const T )>;
+
+template <typename T, std::size_t Size>
+constexpr flux<T>
+lax_friedrichs( const std::array<state<T>, Size> & state, const std::size_t i,
+                const T dt, const T dx, const T gamma ) {
+    const auto f_i{ f( state[i], gamma ) }, f_i_1{ f( state[i + 1], gamma ) };
+    // clang-format off
+                const flux<T> f{
+                    0.5 * (f_i + f_i_1 )
+                    + 0.5 * ( dx / dt ) * ( state[i] - state[i + 1] )
+                };
+    // clang-format on
+    return f;
+}
+
+template <typename T, std::size_t Size>
+constexpr flux<T>
+lax_wendroff( const std::array<state<T>, Size> & state, const std::size_t i,
+              const T dt, const T dx, const T gamma ) {
+    const auto & q{ state[i] };
+    const auto & q_1{ state[i + 1] };
+    return f( 0.5 * ( q + q_1 )
+                  + 0.5 * ( dt / dx ) * ( f( q, gamma ) - f( q_1, gamma ) ),
+              gamma );
+}
+
+template <typename T, std::size_t Size>
+constexpr flux<T>
+hll( const std::array<state<T>, Size> & states, const std::size_t i,
+     [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
+    // L & R states
+    const auto &U_L{ states[i - 1] }, U_R{ states[i] };
+    if ( i == 0 ) {
+        std::cout << array_string( U_L ) << " " << array_string( U_R )
+                  << std::endl;
+    }
+    // L & R velocities
+    const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
+    // L & R sound speed
+    const auto c_L{ sound_speed( U_L, gamma ) },
+        c_R{ sound_speed( U_R, gamma ) };
+    // L, R, & * pressure
+    const auto p_L{ pressure( U_L, gamma ) }, p_R{ pressure( U_R, gamma ) };
+    const auto p_star{ 0.5 * ( p_L + p_R )
+                       - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
+                             * ( c_R - c_L ) };
+    // L & R q
+    const auto q_L{ p_star <= p_L ?
+                        1 :
+                        std::sqrt( 1
+                                   + ( gamma + 1 ) * ( ( p_star / p_L ) - 1 )
+                                         / ( 2 * gamma ) ) };
+    const auto q_R{ p_star <= p_R ?
+                        1 :
+                        std::sqrt( 1
+                                   + ( gamma + 1 ) * ( ( p_star / p_R ) - 1 )
+                                         / ( 2 * gamma ) ) };
+    // L & R wavespeeds
+    const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
+
+    // L, R & HLL fluxes
+    flux<T> F{};
+    if ( S_L > 0 ) {
+        F = f( U_L, gamma );
+    }
+    else if ( S_R > 0 && S_L < 0 ) {
+        F = ( S_R * f( U_L, gamma ) - S_L * f( U_R, gamma )
+              + S_L * S_R * ( U_R - U_L ) )
+            / ( S_R - S_L );
+    }
+    else if ( S_R < 0 ) {
+        F = f( U_R, gamma );
+    }
+
+    return F;
+}
+
+template <typename T, std::size_t Size>
+constexpr flux<T>
+hllc( const std::array<state<T>, Size> & states, const std::size_t i,
+      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx,
+      const T gamma ) {
+    // L & R states
+    const auto &Q_L{ states[i - 1] }, Q_R{ states[i] };
+    // L & R velocities
+    const auto v_L{ v( Q_L ) }, v_R{ v( Q_R ) };
+    // L & R sound speed
+    const auto c_L{ sound_speed( Q_L, gamma ) },
+        c_R{ sound_speed( Q_R, gamma ) };
+    // L, R, & * pressure
+    const auto p_L{ pressure( Q_L, gamma ) }, p_R{ pressure( Q_R, gamma ) };
+    // clang-format off
+                // exponent z
+                const T z = ( gamma - 1 ) / ( 2 * gamma );
+                // p_star according to paper
+                const auto p_star{
+                    std::pow(
+                        (c_L + c_R - 0.5 * (gamma - 1) * (v_R - v_L))
+                        /
+                        ((c_L / std::pow(pressure(Q_L, gamma), z)) + (c_R / std::pow(pressure(Q_R, gamma), z))),
+                        1 / z
+                    )
+                };
+    // clang-format on
+    // L & R q
+    const auto q_L{ p_star <= p_L ?
+                        1 :
+                        std::sqrt( 1
+                                   + ( gamma + 1 ) * ( ( p_star / p_L ) - 1 )
+                                         / ( 2 * gamma ) ) };
+    const auto q_R{ p_star <= p_R ?
+                        1 :
+                        std::sqrt( 1
+                                   + ( gamma + 1 ) * ( ( p_star / p_R ) - 1 )
+                                         / ( 2 * gamma ) ) };
+    // L & R wavespeeds
+    const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
+    // clang-format off
+                const auto S_star{
+                    ( p_R - p_L + Q_L[1] * ( S_L - v_L ) - Q_R[1] * ( S_R - v_R ) )
+                    /
+                    ( Q_L[0] * ( S_L - v_L ) - Q_R[0] * ( S_R - v_R ))
+                };
+    // clang-format on
+
+    // L* & R* Q
+    const auto Q_L_prefactor{ Q_L[0] * ( S_L - v_L ) / ( S_L - S_star ) },
+        Q_R_prefactor{ Q_R[0] * ( S_R - v_R ) / ( S_R - S_star ) };
+    // clang-format off
+                const auto Q_L_star{
+                    Q_L_prefactor
+                    * state<T>{
+                        1,
+                        S_star,
+                        ( Q_L[2] / Q_L[0] )
+                          + ( S_star - v_L )
+                              * ( S_star
+                                  + ( p_L ) / ( Q_L[0] * ( S_L - v_L ) ) ) }
+                };
+                const auto Q_R_star{
+                    Q_R_prefactor
+                    * state<T>{ 1, S_star,
+                                ( Q_R[2] / Q_R[0] )
+                                    + ( S_star - v_R )
+                                          * ( S_star
+                                              + ( p_R )
+                                                    / ( Q_R[0]
+                                                        * ( S_R - v_R ) ) ) }
+                };
+    // clang-format on
+
+    flux<T> F{};
+    if ( 0 <= S_L ) {
+        F = f( Q_L, gamma );
+    }
+    else if ( S_L <= 0 && 0 <= S_star ) {
+        F = f( Q_L, gamma ) + S_L * ( Q_L_star - Q_L );
+    }
+    else if ( S_star <= 0 && 0 <= S_R ) {
+        F = f( Q_R, gamma ) + S_R * ( Q_R_star - Q_R );
+    }
+    else if ( S_R <= 0 ) {
+        F = f( Q_R, gamma );
+    }
+
+    return F;
+}
+
 // Class enum for selecting between type of algorithm.
 // The value of each enum name is set to the required no. of ghost cells
 enum class solution_type : std::size_t {
@@ -313,6 +478,7 @@ enum class solution_type : std::size_t {
 };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
 enum class coordinate_type : std::size_t { cartesian, spherical };
+enum class approx_order : std::size_t { first, second };
 
 const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll",
@@ -321,7 +487,7 @@ const std::array<std::string, 4> solution_string{ "lax_friedrichs",
 
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
-          boundary_type   Rbc,
+          boundary_type Rbc, approx_order Order = approx_order::first,
           coordinate_type Coords = coordinate_type::cartesian,
           bool            incl_endpoint = true>
 class fluid_solver
@@ -402,290 +568,13 @@ class fluid_solver
 
     constexpr auto simulate( const T endpoint, const T gamma,
                              const bool  save_endpoint = true,
-                             std::string opt_id = "" ) noexcept {
-
-        if ( !opt_id.empty() ) {
-            opt_id += "_";
-        }
-
-        const auto CFL_condition = [*this, &gamma]() {
-            std::array<T, Size> s_max;
-            for ( std::size_t i{ 0 }; i < Size; ++i ) {
-                s_max[i] = max_wave_speed( m_state[i + 1], gamma );
-            }
-            const auto max = *std::max_element( s_max.cbegin(), s_max.cend() );
-            return 0.3 * m_dx / max;
-        };
-
-        T time_step = CFL_condition();
-        for ( T t{ 0 }; t <= endpoint; t += time_step ) {
-            update_state( time_step, gamma );
-
-            if constexpr ( Coords == coordinate_type::spherical ) {
-                for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-                    auto &        Q{ m_state[i] };
-                    const flux<T> spherical_source{
-                        2 * Q[1] / ( m_x[i - 1] + 0.25 * m_dx ),
-                        2 * Q[0] * v( Q ) * v( Q )
-                            / ( m_x[i - 1] + 0.25 * m_dx ),
-                        2 * ( Q[2] + pressure( Q, gamma ) ) * v( Q )
-                            / ( m_x[i - 1] + 0.25 * m_dx )
-                    };
-                    Q -= spherical_source * time_step;
-                }
-            }
-
-            m_previous_state = m_state;
-            apply_boundary_conditions();
-            time_step = CFL_condition();
-        }
-
-        if ( save_endpoint ) {
-            const auto Q1{ q1() };
-            const auto Q2{ q2() };
-            const auto Q3{ q3() };
-
-            write_to_file<T, Size>(
-                opt_id + std::to_string( endpoint ) + "s_"
-                    + solution_string[static_cast<std::size_t>( Type )]
-                    + "_state.csv",
-                { m_x, Q1, v( Q1, Q2 ), pressure( Q1, Q2, Q3, gamma ),
-                  e( Q1, Q2, Q3, gamma ) },
-                { "x", "d", "v", "p", "e" } );
-        }
-
-        return m_state;
-    }
+                             std::string opt_id = "" ) noexcept;
 
     private:
-    constexpr void apply_boundary_conditions() noexcept {
-        switch ( Lbc ) {
-        case boundary_type::outflow: {
-            m_state[0] = m_state[1];
-            m_previous_state[0] = m_previous_state[1];
-        } break;
-        case boundary_type::reflecting: {
-            m_state[0] = m_state[1];
-            m_previous_state[0] = m_previous_state[1];
-            m_state[0][1] *= -1;
-            m_previous_state[0][1] *= -1;
-        } break;
-        }
-        switch ( Rbc ) {
-        case boundary_type::outflow: {
-            m_state[Size + 1] = m_state[Size];
-            m_previous_state[Size + 1] = m_previous_state[Size];
-        } break;
-        case boundary_type::reflecting: {
-            m_state[Size + 1] = m_state[Size];
-            m_previous_state[Size + 1] = m_previous_state[Size];
-            m_state[Size + 1][1] *= -1;
-            m_previous_state[Size + 1][1] *= -1;
-        } break;
-        }
-    };
-
-    constexpr void update_state( const T time_step, const T gamma ) noexcept {
-        if constexpr ( Type == solution_type::lax_friedrichs ) {
-            const auto f_half = [*this, time_step,
-                                 gamma]( const std::size_t i ) {
-                const auto f_i{ f( m_previous_state[i], gamma ) },
-                    f_i_1{ f( m_previous_state[i + 1], gamma ) };
-                // clang-format off
-                const flux<T> f{
-                    0.5 * (f_i + f_i_1 )
-                    + 0.5 * ( m_dx / time_step ) * ( m_previous_state[i] - m_previous_state[i + 1] )
-                };
-                // clang-format on
-                return f;
-            };
-
-            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-                m_state[i] =
-                    m_previous_state[i]
-                    + ( time_step / m_dx ) * ( f_half( i - 1 ) - f_half( i ) );
-            }
-        }
-        else if constexpr ( Type == solution_type::lax_wendroff ) {
-            const auto q_half = [*this, &gamma,
-                                 &time_step]( const std::uint64_t i ) {
-                const auto & q{ m_previous_state[i] };
-                const auto & q_1{ m_previous_state[i + 1] };
-                return 0.5 * ( q + q_1 )
-                       + 0.5 * ( time_step / m_dx )
-                             * ( f( q, gamma ) - f( q_1, gamma ) );
-            };
-
-            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-                m_state[i] = m_previous_state[i]
-                             - ( time_step / m_dx )
-                                   * ( f( q_half( i ), gamma )
-                                       - f( q_half( i - 1 ), gamma ) );
-            }
-        }
-        else if constexpr ( Type == solution_type::hll ) {
-            const auto f_hll = [*this,
-                                &gamma]( const std::size_t i ) -> flux<T> {
-                // L & R states
-                const auto &U_L{ m_previous_state[i - 1] },
-                    U_R{ m_previous_state[i] };
-                // L & R velocities
-                const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
-                // L & R sound speed
-                const auto c_L{ sound_speed( U_L, gamma ) },
-                    c_R{ sound_speed( U_R, gamma ) };
-                // L, R, & * pressure
-                const auto p_L{ pressure( U_L, gamma ) },
-                    p_R{ pressure( U_R, gamma ) };
-                const auto p_star{ 0.5 * ( p_L + p_R )
-                                   - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
-                                         * ( c_R - c_L ) };
-                // L & R q
-                const auto q_L{ p_star <= p_L ?
-                                    1 :
-                                    std::sqrt( 1
-                                               + ( gamma + 1 )
-                                                     * ( ( p_star / p_L ) - 1 )
-                                                     / ( 2 * gamma ) ) };
-                const auto q_R{ p_star <= p_R ?
-                                    1 :
-                                    std::sqrt( 1
-                                               + ( gamma + 1 )
-                                                     * ( ( p_star / p_R ) - 1 )
-                                                     / ( 2 * gamma ) ) };
-                // L & R wavespeeds
-                const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
-
-                // L, R & HLL fluxes
-                const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
-                const auto F_HLL{ ( S_R * F_L - S_L * F_R
-                                    + S_L * S_R * ( U_R - U_L ) )
-                                  / ( S_R - S_L ) };
-
-                if ( S_L > 0 ) {
-                    return F_L;
-                }
-                else if ( S_R > 0 && S_L < 0 ) {
-                    return F_HLL;
-                }
-                else if ( S_R < 0 ) {
-                    return F_R;
-                }
-                else {
-                    std::cout << "ERROR: Invalid branch reached." << std::endl;
-                    assert( false );
-                }
-            };
-
-            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-                const auto f_minus{ f_hll( i ) }, f_plus{ f_hll( i + 1 ) };
-                m_state[i] = m_previous_state[i]
-                             - ( time_step / m_dx ) * ( f_plus - f_minus );
-            }
-        }
-        else if ( Type == solution_type::hllc ) {
-            const auto f_hllc = [*this,
-                                 &gamma]( const std::size_t i ) -> flux<T> {
-                // L & R states
-                const auto &Q_L{ m_previous_state[i - 1] },
-                    Q_R{ m_previous_state[i] };
-                // L & R velocities
-                const auto v_L{ v( Q_L ) }, v_R{ v( Q_R ) };
-                // L & R sound speed
-                const auto c_L{ sound_speed( Q_L, gamma ) },
-                    c_R{ sound_speed( Q_R, gamma ) };
-                // L, R, & * pressure
-                const auto p_L{ pressure( Q_L, gamma ) },
-                    p_R{ pressure( Q_R, gamma ) };
-                // clang-format off
-                // exponent z
-                const T z = ( gamma - 1 ) / ( 2 * gamma );
-                // p_star according to paper
-                const auto p_star{
-                    std::pow(
-                        (c_L + c_R - 0.5 * (gamma - 1) * (v_R - v_L))
-                        /
-                        ((c_L / std::pow(pressure(Q_L, gamma), z)) + (c_R / std::pow(pressure(Q_R, gamma), z))),
-                        1 / z
-                    )
-                };
-                // clang-format on
-                // L & R q
-                const auto q_L{ p_star <= p_L ?
-                                    1 :
-                                    std::sqrt( 1
-                                               + ( gamma + 1 )
-                                                     * ( ( p_star / p_L ) - 1 )
-                                                     / ( 2 * gamma ) ) };
-                const auto q_R{ p_star <= p_R ?
-                                    1 :
-                                    std::sqrt( 1
-                                               + ( gamma + 1 )
-                                                     * ( ( p_star / p_R ) - 1 )
-                                                     / ( 2 * gamma ) ) };
-                // L & R wavespeeds
-                const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
-                // clang-format off
-                const auto S_star{
-                    ( p_R - p_L + Q_L[1] * ( S_L - v_L ) - Q_R[1] * ( S_R - v_R ) )
-                    /
-                    ( Q_L[0] * ( S_L - v_L ) - Q_R[0] * ( S_R - v_R ))
-                };
-                // clang-format on
-
-                // L* & R* Q
-                const auto Q_L_prefactor{ Q_L[0] * ( S_L - v_L )
-                                          / ( S_L - S_star ) },
-                    Q_R_prefactor{ Q_R[0] * ( S_R - v_R ) / ( S_R - S_star ) };
-                // clang-format off
-                const auto Q_L_star{
-                    Q_L_prefactor
-                    * state<T>{
-                        1,
-                        S_star,
-                        ( Q_L[2] / Q_L[0] )
-                          + ( S_star - v_L )
-                              * ( S_star
-                                  + ( p_L ) / ( Q_L[0] * ( S_L - v_L ) ) ) }
-                };
-                const auto Q_R_star{
-                    Q_R_prefactor
-                    * state<T>{ 1, S_star,
-                                ( Q_R[2] / Q_R[0] )
-                                    + ( S_star - v_R )
-                                          * ( S_star
-                                              + ( p_R )
-                                                    / ( Q_R[0]
-                                                        * ( S_R - v_R ) ) ) }
-                };
-                // clang-format on
-
-                const auto F_L{ f( Q_L, gamma ) }, F_R{ f( Q_R, gamma ) };
-                if ( 0 <= S_L ) {
-                    return F_L;
-                }
-                else if ( S_L <= 0 && 0 <= S_star ) {
-                    return F_L + S_L * ( Q_L_star - Q_L );
-                }
-                else if ( S_star <= 0 && 0 <= S_R ) {
-                    return F_R + S_R * ( Q_R_star - Q_R );
-                }
-                else if ( S_R <= 0 ) {
-                    return F_R;
-                }
-                else {
-                    std::cout << "ERROR: Invalid branch reached." << std::endl;
-                    assert( false );
-                }
-            };
-
-            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-                const auto f_minus{ f_hllc( i ) }, f_plus{ f_hllc( i + 1 ) };
-                m_state[i] = m_previous_state[i]
-                             - ( time_step / m_dx ) * ( f_plus - f_minus );
-            }
-        }
-    }
+    [[nodiscard]] constexpr auto apply_boundary_conditions() noexcept;
+    [[nodiscard]] constexpr std::array<state<T>, Size + 2>
+    d_state( const std::array<state<T>, Size + 2> & states,
+             [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept;
 
     T m_dx;
     // An array of state arrays (3 values) with length Size + 2, 1 ghost cell
@@ -694,6 +583,143 @@ class fluid_solver
     std::array<state<T>, Size + 2> m_previous_state;
     std::array<T, Size>            m_x;
 };
+
+template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
+          boundary_type Rbc, approx_order Order, coordinate_type Coords,
+          bool incl_endpoint>
+constexpr auto
+fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
+    const T endpoint, const T gamma, const bool save_endpoint,
+    std::string opt_id ) noexcept {
+    if ( !opt_id.empty() ) {
+        opt_id += "_";
+    }
+
+    const auto CFL_condition = [*this, &gamma]() {
+        std::array<T, Size> s_max;
+        for ( std::size_t i{ 0 }; i < Size; ++i ) {
+            s_max[i] = max_wave_speed( m_state[i + 1], gamma );
+        }
+        const auto max = *std::max_element( s_max.cbegin(), s_max.cend() );
+        return 0.3 * m_dx / max;
+    };
+
+    T time_step = CFL_condition();
+    for ( T t{ 0 }; t <= endpoint; t += time_step ) {
+        if constexpr ( Order == approx_order::first ) {
+            m_state =
+                m_state + time_step * d_state( m_state, t, time_step, gamma );
+        }
+        else if constexpr ( Order == approx_order::second ) {
+            const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
+            const auto K2 =
+                time_step * d_state( m_state + K1, t + time_step, gamma );
+            m_state = m_state + 0.5 * ( K1 + K2 );
+        }
+
+        if constexpr ( Coords == coordinate_type::spherical ) {
+            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+                auto &        Q{ m_state[i] };
+                const flux<T> spherical_source{
+                    2 * Q[1] / ( m_x[i - 1] + 0.25 * m_dx ),
+                    2 * Q[0] * v( Q ) * v( Q ) / ( m_x[i - 1] + 0.25 * m_dx ),
+                    2 * ( Q[2] + pressure( Q, gamma ) ) * v( Q )
+                        / ( m_x[i - 1] + 0.25 * m_dx )
+                };
+                Q -= spherical_source * time_step;
+            }
+        }
+
+        m_previous_state = m_state;
+        apply_boundary_conditions();
+        time_step = CFL_condition();
+    }
+
+    if ( save_endpoint ) {
+        const auto Q1{ q1() };
+        const auto Q2{ q2() };
+        const auto Q3{ q3() };
+
+        write_to_file<T, Size>(
+            opt_id + std::to_string( endpoint ) + "s_"
+                + solution_string[static_cast<std::size_t>( Type )]
+                + "_state.csv",
+            { m_x, Q1, v( Q1, Q2 ), pressure( Q1, Q2, Q3, gamma ),
+              e( Q1, Q2, Q3, gamma ) },
+            { "x", "d", "v", "p", "e" } );
+    }
+
+    return m_state;
+}
+
+template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
+          boundary_type Rbc, approx_order Order, coordinate_type Coords,
+          bool incl_endpoint>
+[[nodiscard]] constexpr auto
+fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords,
+             incl_endpoint>::apply_boundary_conditions() noexcept {
+    switch ( Lbc ) {
+    case boundary_type::outflow: {
+        m_state[0] = m_state[1];
+        m_previous_state[0] = m_previous_state[1];
+    } break;
+    case boundary_type::reflecting: {
+        m_state[0] = m_state[1];
+        m_previous_state[0] = m_previous_state[1];
+        m_state[0][1] *= -1;
+        m_previous_state[0][1] *= -1;
+    } break;
+    }
+    switch ( Rbc ) {
+    case boundary_type::outflow: {
+        m_state[Size + 1] = m_state[Size];
+        m_previous_state[Size + 1] = m_previous_state[Size];
+    } break;
+    case boundary_type::reflecting: {
+        m_state[Size + 1] = m_state[Size];
+        m_previous_state[Size + 1] = m_previous_state[Size];
+        m_state[Size + 1][1] *= -1;
+        m_previous_state[Size + 1][1] *= -1;
+    } break;
+    }
+}
+
+template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
+          boundary_type Rbc, approx_order Order, coordinate_type Coords,
+          bool incl_endpoint>
+[[nodiscard]] constexpr std::array<state<T>, Size + 2>
+fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
+    const std::array<state<T>, Size + 2> & states, [[maybe_unused]] const T t,
+    const T dt, const T gamma ) noexcept {
+    fluid_algorithm<T, Size + 2> f_half;
+
+
+    std::array<state<T>, Size + 2> delta{};
+    for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+        if constexpr ( Type == solution_type::lax_friedrichs ) {
+            delta[i] = -( 1 / m_dx )
+                       * ( lax_friedrichs( states, i, dt, m_dx, gamma )
+                           - lax_friedrichs( states, i - 1, dt, m_dx, gamma ) );
+        }
+        else if constexpr ( Type == solution_type::lax_wendroff ) {
+            delta[i] = -( 1 / m_dx )
+                       * ( lax_wendroff( states, i, dt, m_dx, gamma )
+                           - lax_wendroff( states, i - 1, dt, m_dx, gamma ) );
+        }
+        else if constexpr ( Type == solution_type::hll ) {
+            delta[i] = -( 1 / m_dx )
+                       * ( hll( states, i, dt, m_dx, gamma )
+                           - hll( states, i + 1, dt, m_dx, gamma ) );
+        }
+        else if constexpr ( Type == solution_type::hllc ) {
+            delta[i] = -( 1 / m_dx )
+                       * ( hllc( states, i, dt, m_dx, gamma )
+                           - hllc( states, i + 1, dt, m_dx, gamma ) );
+        }
+    }
+
+    return delta;
+}
 
 int
 main() {
@@ -826,25 +852,27 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
-                 boundary_type::outflow, coordinate_type::spherical>
+                 boundary_type::outflow, approx_order::first,
+                 coordinate_type::spherical>
         fs_spherical_lf( xmin, xmax, initial_state );
     fs_spherical_lf.simulate( 0.25, gamma, true, "S" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_wendroff, boundary_type::outflow,
-                 boundary_type::outflow, coordinate_type::spherical>
+                 boundary_type::outflow, approx_order::first,
+                 coordinate_type::spherical>
         fs_spherical_lw( xmin, xmax, initial_state );
     fs_spherical_lw.simulate( 0.25, gamma, true, "S" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
                  boundary_type::outflow, boundary_type::outflow,
-                 coordinate_type::spherical>
+                 approx_order::first, coordinate_type::spherical>
         fs_spherical_hll( xmin, xmax, initial_state );
     fs_spherical_hll.simulate( 0.25, gamma, true, "S" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 coordinate_type::spherical>
+                 approx_order::first, coordinate_type::spherical>
         fs_spherical_hllc( xmin, xmax, initial_state );
     fs_spherical_hllc.simulate( 0.25, gamma, true, "S" );
 }

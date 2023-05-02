@@ -6,6 +6,9 @@ import pandas as pd
 import re
 
 
+delete_files = True
+
+
 a = pd.read_csv("../shock_a.txt", delimiter='\s+')
 b = pd.read_csv("../shock_b.txt", delimiter='\s+')
 
@@ -32,8 +35,9 @@ ax4.plot(a['x'], a['e'], 'k-')
 pattern = re.compile(r"A_[\d]*\.[\d]*s_([\w]+)_state\.csv")
 for filename in os.listdir():
     if pattern.match(f"{filename}"):
-        print(f"Plotting: {filename}")
         sim_type = re.findall(pattern, filename)[0]
+        print(f"Plotting: {filename} - {sim_type}")
+        # if sim_type != "hll" and sim_type != "hllc":
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
                       linewidth=1, label=sim_type)[0]
@@ -44,7 +48,8 @@ for filename in os.listdir():
                  linewidth=1, label=sim_type)
         ax4.plot(df['x'], df['e'], c=color, ls='-',
                  linewidth=1, label=sim_type)
-        os.remove(filename)
+        if delete_files:
+            os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_A.png")
 
@@ -65,8 +70,9 @@ ax4.plot(b['x'], b['e'], 'k-')
 pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_state\.csv")
 for filename in os.listdir():
     if pattern.match(filename):
-        print(f"Plotting: {filename}")
         sim_type = re.findall(pattern, filename)[0]
+        print(f"Plotting: {filename} - {sim_type}")
+        # if sim_type != 'hll' and sim_type != 'hllc':
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
                       linewidth=1, label=sim_type)[0]
@@ -77,9 +83,12 @@ for filename in os.listdir():
                  linewidth=1, label=sim_type)
         ax4.plot(df['x'], df['e'], c=color, ls='-',
                  linewidth=1, label=sim_type)
-        os.remove(filename)
+        if delete_files:
+            os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_B.png")
+plt.show()
+
 
 # Spherical coords shocktube
 
@@ -103,8 +112,9 @@ ax4.plot(s['x'], e(s['rho'], s['p'], gamma), 'k-')
 pattern = re.compile(r"S_[\d]*\.[\d]*s_([\w]+)_state\.csv")
 for filename in os.listdir():
     if pattern.match(filename):
-        print(f"Plotting: {filename}")
         sim_type = re.findall(pattern, filename)[0]
+        print(f"Plotting: {filename} - {sim_type}")
+        # if sim_type != 'hll' and sim_type != 'hllc':
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
                       linewidth=1, label=sim_type)[0]
@@ -115,7 +125,8 @@ for filename in os.listdir():
                  linewidth=1, label=sim_type)
         ax4.plot(df['x'], df['e'], c=color, ls='-',
                  linewidth=1, label=sim_type)
-        os.remove(filename)
+        if delete_files:
+            os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_S.png")
 
