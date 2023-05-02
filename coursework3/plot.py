@@ -46,6 +46,7 @@ for filename in os.listdir():
                  linewidth=1.2, label=sim_type)
         os.remove(filename)
 plt.legend()
+plt.savefig("shocktube_A.png")
 
 # Shocktube B:
 # Shocktube spherical:
@@ -78,6 +79,7 @@ for filename in os.listdir():
                  linewidth=1.2, label=sim_type)
         os.remove(filename)
 plt.legend()
+plt.savefig("shocktube_B.png")
 
 # Spherical coords shocktube
 
@@ -115,5 +117,6 @@ for filename in os.listdir():
                  linewidth=1.2, label=sim_type)
         os.remove(filename)
 plt.legend()
+plt.savefig("shocktube_S.png")
 
-plt.show()
+#plt.show()
