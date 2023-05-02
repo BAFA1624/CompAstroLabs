@@ -36,14 +36,14 @@ for filename in os.listdir():
         sim_type = re.findall(pattern, filename)[0]
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
-                      linewidth=1.2, label=sim_type)[0]
+                      linewidth=1, label=sim_type)[0]
         color = pl.get_color()
         ax2.plot(df['x'], df['v'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         ax3.plot(df['x'], df['p'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         ax4.plot(df['x'], df['e'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_A.png")
@@ -69,14 +69,14 @@ for filename in os.listdir():
         sim_type = re.findall(pattern, filename)[0]
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
-                      linewidth=1.2, label=sim_type)[0]
+                      linewidth=1, label=sim_type)[0]
         color = pl.get_color()
         ax2.plot(df['x'], df['v'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         ax3.plot(df['x'], df['p'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         ax4.plot(df['x'], df['e'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_B.png")
@@ -107,16 +107,16 @@ for filename in os.listdir():
         sim_type = re.findall(pattern, filename)[0]
         df = pd.read_csv(filename)
         pl = ax1.plot(df['x'], df['d'], ls='-',
-                      linewidth=1.2, label=sim_type)[0]
+                      linewidth=1, label=sim_type)[0]
         color = pl.get_color()
         ax2.plot(df['x'], df['v'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         ax3.plot(df['x'], df['p'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         ax4.plot(df['x'], df['e'], c=color, ls='-',
-                 linewidth=1.2, label=sim_type)
+                 linewidth=1, label=sim_type)
         os.remove(filename)
 plt.legend()
 plt.savefig("shocktube_S.png")
 
-#plt.show()
+# plt.show()
