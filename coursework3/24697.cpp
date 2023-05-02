@@ -403,8 +403,6 @@ class fluid_solver
     constexpr auto simulate( const T endpoint, const T gamma,
                              const bool  save_endpoint = true,
                              std::string opt_id = "" ) noexcept {
-        std::cout << solution_string[static_cast<std::size_t>( Type )]
-                  << std::endl;
 
         if ( !opt_id.empty() ) {
             opt_id += "_";
