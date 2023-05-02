@@ -483,6 +483,7 @@ enum class approx_order : std::size_t { first, second };
 const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll",
                                                   "hllc" };
+const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
 
 
 // Fluid dynamics solver definition
@@ -613,7 +614,8 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
         else {
             const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
             const auto K2 =
-                time_step * d_state( m_state + K1, t + time_step, gamma );
+                time_step
+                * d_state( m_state + K1, t + time_step, time_step, gamma );
             m_state = m_state + 0.5 * ( K1 + K2 );
         }
 
@@ -642,7 +644,8 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
 
         write_to_file<T, Size>(
             opt_id + std::to_string( endpoint ) + "s_"
-                + solution_string[static_cast<std::size_t>( Type )]
+                + solution_string[static_cast<std::size_t>( Type )] + "_"
+                + approx_string[static_cast<std::size_t>( Order )]
                 + "_state.csv",
             { m_x, Q1, v( Q1, Q2 ), pressure( Q1, Q2, Q3, gamma ),
               e( Q1, Q2, Q3, gamma ) },
@@ -863,7 +866,7 @@ main() {
         fs_spherical_lw( xmin, xmax, initial_state );
     fs_spherical_lw.simulate( 0.25, gamma, true, "S" );
 
-    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
                  approx_order::first, coordinate_type::spherical>
         fs_spherical_hll( xmin, xmax, initial_state );
@@ -871,7 +874,7 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::first, coordinate_type::spherical>
+                 approx_order::second, coordinate_type::spherical>
         fs_spherical_hllc( xmin, xmax, initial_state );
     fs_spherical_hllc.simulate( 0.25, gamma, true, "S" );
 }

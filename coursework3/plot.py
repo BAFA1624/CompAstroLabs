@@ -66,7 +66,7 @@ ax2.plot(b['x'], b['v'], 'k-')
 ax3.plot(b['x'], b['p'], 'k-')
 ax4.plot(b['x'], b['e'], 'k-')
 
-pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_state\.csv")
+pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_([\w]+)_state\.csv")
 for filename in os.listdir():
     if pattern.match(filename):
         sim_type = re.findall(pattern, filename)[0]
