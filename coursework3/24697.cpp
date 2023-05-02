@@ -369,7 +369,7 @@ class fluid_solver
                 return f;
             };
 
-            for ( std::size_t i{ 1 }; i <= m_x.size(); ++i ) {
+            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
                 m_state[i] =
                     m_previous_state[i]
                     + ( time_step / m_dx ) * ( f_half( i - 1 ) - f_half( i ) );
