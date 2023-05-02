@@ -365,21 +365,21 @@ class fluid_solver
         return m_previous_state;
     }
     [[nodiscard]] constexpr auto q1() const noexcept {
-        std::array<T, Size> q1_array;
+        std::array<T, Size> q1_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q1_array[i] = m_state[i + 1][0];
         }
         return q1_array;
     }
     [[nodiscard]] constexpr auto q2() const noexcept {
-        std::array<T, Size> q2_array;
+        std::array<T, Size> q2_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q2_array[i] = m_state[i + 1][1];
         }
         return q2_array;
     }
     [[nodiscard]] constexpr auto q3() const noexcept {
-        std::array<T, Size> q3_array;
+        std::array<T, Size> q3_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q3_array[i] = m_state[i + 1][2];
         }
@@ -413,7 +413,6 @@ class fluid_solver
             update_state( time_step, gamma );
 
             if constexpr ( Coords == coordinate_type::spherical ) {
-                // std::string s{};
                 for ( std::size_t i{ 1 }; i <= Size; ++i ) {
                     auto &        Q{ m_state[i] };
                     const flux<T> spherical_source{
@@ -423,12 +422,8 @@ class fluid_solver
                         2 * ( Q[2] + pressure( Q, gamma ) ) * v( Q )
                             / ( m_x[i - 1] + 0.25 * m_dx )
                     };
-                    /*if ( i == 40 ) {
-                    s += array_string( spherical_source ) + " ";
-                    }*/
                     Q -= spherical_source * time_step;
                 }
-                // std::cout << s << std::endl;
             }
 
             m_previous_state = m_state;
