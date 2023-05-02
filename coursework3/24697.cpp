@@ -1,7 +1,5 @@
 #include <algorithm>
 #include <array>
-#include <cassert>
-#include <cmath>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -301,6 +299,7 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 // The value of each enum name is set to the required no. of ghost cells
 enum class solution_type : std::size_t { lax_friedrichs, lax_wendroff, hll };
 enum class boundary_type : std::size_t { outflow, reflecting, custom };
+enum class coordinate_type : std::size_t { cartesian, spherical };
 
 const std::array<std::string, 3> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll" };
@@ -308,7 +307,9 @@ const std::array<std::string, 3> solution_string{ "lax_friedrichs",
 
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
-          boundary_type Rbc, bool incl_endpoint = true>
+          boundary_type   Rbc,
+          coordinate_type Coords = coordinate_type::cartesian,
+          bool            incl_endpoint = true>
 class fluid_solver
 {
     public:
@@ -362,21 +363,21 @@ class fluid_solver
         return m_previous_state;
     }
     [[nodiscard]] constexpr auto q1() const noexcept {
-        std::array<T, Size> q1_array{};
+        std::array<T, Size> q1_array;
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q1_array[i] = m_state[i + 1][0];
         }
         return q1_array;
     }
     [[nodiscard]] constexpr auto q2() const noexcept {
-        std::array<T, Size> q2_array{};
+        std::array<T, Size> q2_array;
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q2_array[i] = m_state[i + 1][1];
         }
         return q2_array;
     }
     [[nodiscard]] constexpr auto q3() const noexcept {
-        std::array<T, Size> q3_array{};
+        std::array<T, Size> q3_array;
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
             q3_array[i] = m_state[i + 1][2];
         }
@@ -396,21 +397,43 @@ class fluid_solver
         }
 
         const auto CFL_condition = [*this, &gamma]() {
-            std::array<T, Size> s_max{};
+            std::array<T, Size> s_max;
             for ( std::size_t i{ 0 }; i < Size; ++i ) {
                 s_max[i] = max_wave_speed( m_state[i + 1], gamma );
             }
             const auto max = *std::max_element( s_max.cbegin(), s_max.cend() );
             return 0.3 * m_dx / max;
         };
-
-        T time_step = CFL_condition();
+        std::size_t count{ 0 };
+        T           time_step = CFL_condition();
         for ( T t{ 0 }; t <= endpoint; t += time_step ) {
+            count++;
             update_state( time_step, gamma );
+
+            if constexpr ( Coords == coordinate_type::spherical ) {
+                // std::string s{};
+                for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+                    auto &        Q{ m_state[i] };
+                    const flux<T> spherical_source{
+                        2 * Q[1] / ( m_x[i - 1] + 0.25 * m_dx ),
+                        2 * Q[0] * v( Q ) * v( Q )
+                            / ( m_x[i - 1] + 0.25 * m_dx ),
+                        2 * ( Q[2] + pressure( Q, gamma ) ) * v( Q )
+                            / ( m_x[i - 1] + 0.25 * m_dx )
+                    };
+                    /*if ( i == 40 ) {
+                    s += array_string( spherical_source ) + " ";
+                    }*/
+                    Q -= spherical_source * time_step;
+                }
+                // std::cout << s << std::endl;
+            }
+
             m_previous_state = m_state;
             apply_boundary_conditions();
             time_step = CFL_condition();
         }
+        std::cout << "Count: " << count << std::endl;
 
         if ( save_endpoint ) {
             const auto Q1{ q1() };
@@ -538,7 +561,7 @@ class fluid_solver
                 else if ( S_R > 0 && S_L < 0 ) {
                     return F_HLL;
                 }
-                else if ( S_R < 0 ) {
+                else {
                     return F_R;
                 }
             };
@@ -561,9 +584,9 @@ class fluid_solver
 
 int
 main() {
-    std::array<double, 100>                               q1{};
-    std::array<double, std::tuple_size_v<decltype( q1 )>> q2{};
-    std::array<double, std::tuple_size_v<decltype( q1 )>> q3{};
+    std::array<double, 100>                               q1;
+    std::array<double, std::tuple_size_v<decltype( q1 )>> q2;
+    std::array<double, std::tuple_size_v<decltype( q1 )>> q3;
 
     const double xmin{ 0. };
     const double xmax{ 1. };
@@ -668,5 +691,31 @@ main() {
             p = 0.1;
             v = 0.;
         }
+
+        const double epsilon = p / ( rho * ( gamma - 1 ) );
+
+        q1[i] = rho;
+        q2[i] = rho * v;
+        q3[i] = rho * epsilon + 0.5 * rho * v * v;
     }
+
+    initial_state = construct_state( q1, q2, q3 );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
+                 solution_type::lax_friedrichs, boundary_type::outflow,
+                 boundary_type::outflow, coordinate_type::spherical>
+        fs_spherical_lf( xmin, xmax, initial_state );
+    fs_spherical_lf.simulate( 0.25, gamma, true, "S" );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
+                 solution_type::lax_wendroff, boundary_type::outflow,
+                 boundary_type::outflow, coordinate_type::spherical>
+        fs_spherical_lw( xmin, xmax, initial_state );
+    fs_spherical_lw.simulate( 0.25, gamma, true, "S" );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
+                 boundary_type::outflow, boundary_type::outflow,
+                 coordinate_type::spherical>
+        fs_spherical_hll( xmin, xmax, initial_state );
+    fs_spherical_hll.simulate( 0.25, gamma, true, "S" );
 }
