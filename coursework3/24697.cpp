@@ -869,7 +869,7 @@ main() {
         fs_spherical_lw( xmin, xmax, initial_state );
     fs_spherical_lw.simulate( 0.25, gamma, true, "S" );
 
-    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
                  boundary_type::outflow, boundary_type::outflow,
                  approx_order::second, coordinate_type::spherical>
         fs_spherical_hll( xmin, xmax, initial_state );
