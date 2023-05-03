@@ -258,7 +258,7 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
        const T dx, [[maybe_unused]] const T gamma ) {
     // Construct states of rho, v, & p
     // clang-format off
-    /*const state<T> q1{
+    const state<T> q1{
         Q1[0],
         Q1[1] / Q1[0],
         ( gamma - 1 ) * ( Q1[2] - ( ( Q1[1] * Q1[1] ) / ( 2 * Q1[0] ) ) )
@@ -272,35 +272,42 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
         Q3[0],
         Q3[1] / Q3[0],
         ( gamma - 1 ) * ( Q3[2] - ( ( Q3[1] * Q3[1] ) / ( 2 * Q3[0] ) ) )
-    };*/
+    };
     // clang-format on
     // Calculate slope for rho, v, & p using monotonized central-difference
     // limiter
-    /*const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
-        c{ ( q3 - q1 ) / dx };*/
-    const auto a{ ( Q2 - Q1 ) / dx }, b{ ( Q3 - Q2 ) / dx },
-        c{ ( Q3 - Q1 ) / dx };
-    const state<T> sgn_a{ sgn( a ) };
+    const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
+        c{ ( q3 - q1 ) / dx };
+    const state<T> sgn_a{ sgn( 2 * a ) };
 
-
-    const auto slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( b ) )
+    const auto slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( 2 * b ) )
                              * ( sgn_a + sgn( c ) ) };
+    // std::cout << "slope_factor: " << array_string( slope_factor ) <<
+    // std::endl;
+    std::cout << array_string( state<T>{
+        std::min<T>( std::min<T>( std::abs( 2 * a[0] ), std::abs( 2 * b[0] ) ),
+                     std::abs( c[0] ) ),
+        std::min<T>( std::min<T>( std::abs( 2 * a[1] ), std::abs( 2 * b[1] ) ),
+                     std::abs( c[1] ) ),
+        std::min<T>( std::min<T>( std::abs( 2 * a[2] ), std::abs( 2 * b[2] ) ),
+                     std::abs( c[2] ) ) } )
+              << std::endl;
     // clang-format off
     const auto slope{
         slope_factor *
         state<T> {
-            std::min<T>( std::min<T>( std::abs( a[0] ), std::abs( b[0] ) ), std::abs( c[0] ) ),
-            std::min<T>( std::min<T>( std::abs( a[1] ), std::abs( b[1] ) ), std::abs( c[1] ) ),
-            std::min<T>( std::min<T>( std::abs( a[2] ), std::abs( b[2] ) ), std::abs( c[2] ) )
+            std::min<T>( std::min<T>( std::abs( 2 * a[0] ), std::abs( 2 * b[0] ) ), std::abs( c[0] ) ),
+            std::min<T>( std::min<T>( std::abs( 2 * a[1] ), std::abs( 2 * b[1] ) ), std::abs( c[1] ) ),
+            std::min<T>( std::min<T>( std::abs( 2 * a[2] ), std::abs( 2 * b[2] ) ), std::abs( c[2] ) )
         }
     };
+    //std::cout << "slope: " << array_string(slope) << std::endl;
     // clang-format on
 
     // Convert back to rho, rho * v, E
-    /*return state<T>{ slope[0], slope[0] * slope[1],
+    return state<T>{ slope[0], slope[0] * slope[1],
                      ( slope[2] / ( gamma - 1 ) )
-                         - 0.5 * slope[0] * slope[1] * slope[1] };*/
-    return slope;
+                         - 0.5 * slope[0] * slope[1] * slope[1] };
 }
 
 template <typename T, std::size_t Size>
@@ -388,17 +395,30 @@ constexpr inline state<T>
 get_state( const std::array<state<T>, Size> & states, const std::size_t i,
            const T dx, const T gamma ) {
     if ( Order == approx_order::second ) {
-        std::cout << "\t\t" << ( minus_half ? "minus_half " : "plus_half " )
-                  << i - 1 << " " << i << " " << i + 1 << std::endl;
+        if ( i == 0 ) {
+            std::cout << "\t\t" << ( minus_half ? "minus_half " : "plus_half " )
+                      << i - 1 << " " << i << " " << i + 1 << std::endl;
+        }
         if constexpr ( minus_half ) {
-            return states[i]
-                   - 0.5 * dx
-                         * slope( states[i - 1], states[i], states[i + 1], dx,
-                                  gamma );
+            const auto si{ slope( states[i - 1], states[i], states[i + 1], dx,
+                                  gamma ) };
+            if ( i == 0 ) {
+                std::cout << "state_i: " << array_string( states[i] )
+                          << std::endl;
+                std::cout << "adjusted: "
+                          << array_string( states[i] - 0.5 * dx * si )
+                          << std::endl;
+            }
+            return states[i] - 0.5 * dx * si;
         }
         else {
             const auto si{ slope( states[i - 1], states[i], states[i + 1], dx,
                                   gamma ) };
+            if ( i == 0 ) {
+                std::cout << array_string( states[i] ) << std::endl;
+                std::cout << array_string( states[i] + 0.5 * dx * si )
+                          << std::endl;
+            }
             return states[i] + 0.5 * dx * si;
         }
     }
@@ -527,8 +547,11 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
         Q_R = states[i];
     }
     else {
-        std::cout << "\thllc: " << i << " "
-                  << ( minus_half ? "minus_half" : "plus_half" ) << std::endl;
+        if ( i == 0 ) {
+            std::cout << "\thllc: " << i << " "
+                      << ( minus_half ? "minus_half" : "plus_half" )
+                      << std::endl;
+        }
         if constexpr ( minus_half ) {
             Q_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
             Q_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
@@ -857,11 +880,9 @@ template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
 fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     const std::array<state<T>, ARRAY_SIZE( Size, Order )> & states,
     [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept {
-    fluid_algorithm<T, ARRAY_SIZE( Size, Order )>   f_half;
+    fluid_algorithm<T, ARRAY_SIZE( Size, Order )> f_half;
+
     std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
-    std::cout << m_offset << std::endl;
-    std::cout << Size << std::endl;
-    std::cout << Size + m_offset << std::endl;
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
@@ -1050,7 +1071,13 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
+                 approx_order::first, coordinate_type::spherical>
+        fs_spherical_hllc_a( xmin, xmax, initial_state );
+    fs_spherical_hllc_a.simulate( 0.25, gamma, true, "S" );
+
+    fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
+                 boundary_type::outflow, boundary_type::outflow,
                  approx_order::second, coordinate_type::spherical>
-        fs_spherical_hllc( xmin, xmax, initial_state );
-    fs_spherical_hllc.simulate( 0.25, gamma, true, "S" );
+        fs_spherical_hllc_b( xmin, xmax, initial_state );
+    fs_spherical_hllc_b.simulate( 0.25, gamma, true, "S" );
 }
