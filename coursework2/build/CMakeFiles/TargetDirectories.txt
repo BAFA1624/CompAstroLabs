@@ -1,3 +1,0 @@
-/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/build/CMakeFiles/rebuild_cache.dir
-/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/build/CMakeFiles/edit_cache.dir
-/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework2/build/CMakeFiles/24697.dir

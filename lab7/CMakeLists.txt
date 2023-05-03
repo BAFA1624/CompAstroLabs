@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.2)
 
 project(LAB6)
 
+<<<<<<< HEAD
+=======
+set(CMAKE_CXX_COMPILER clang++)
+
+>>>>>>> coursework3_array
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 

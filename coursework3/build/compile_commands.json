@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/build",
+  "command": "clang++ -Wall -Wextra -pedantic -O0 -fstack-protector-all -ggdb -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk -o CMakeFiles/24697.dir/24697.cpp.o -c /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp",
+  "file": "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp",
+  "output": "CMakeFiles/24697.dir/24697.cpp.o"
+}
+]

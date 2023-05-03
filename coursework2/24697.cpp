@@ -2,6 +2,10 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+<<<<<<< HEAD
+=======
+#include <concepts>
+>>>>>>> coursework3_array
 #include <fstream>
 #include <functional>
 #include <initializer_list>
