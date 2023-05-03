@@ -387,9 +387,9 @@ template <typename T, std::size_t Size,
 constexpr inline state<T>
 get_state( const std::array<state<T>, Size> & states, const std::size_t i,
            const T dx, const T gamma ) {
-    // std::cout << "get_state: " << i - 1 << " " << i << " " << i + 1
-    //           << std::endl;
     if ( Order == approx_order::second ) {
+        std::cout << "\t\t" << ( minus_half ? "minus_half " : "plus_half " )
+                  << i - 1 << " " << i << " " << i + 1 << std::endl;
         if constexpr ( minus_half ) {
             return states[i]
                    - 0.5 * dx
@@ -397,10 +397,9 @@ get_state( const std::array<state<T>, Size> & states, const std::size_t i,
                                   gamma );
         }
         else {
-            return states[i]
-                   + 0.5 * dx
-                         * slope( states[i - 1], states[i], states[i + 1], dx,
-                                  gamma );
+            const auto si{ slope( states[i - 1], states[i], states[i + 1], dx,
+                                  gamma ) };
+            return states[i] + 0.5 * dx * si;
         }
     }
     else {
@@ -528,6 +527,8 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
         Q_R = states[i];
     }
     else {
+        std::cout << "\thllc: " << i << " "
+                  << ( minus_half ? "minus_half" : "plus_half" ) << std::endl;
         if constexpr ( minus_half ) {
             Q_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
             Q_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
@@ -858,6 +859,9 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept {
     fluid_algorithm<T, ARRAY_SIZE( Size, Order )>   f_half;
     std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
+    std::cout << m_offset << std::endl;
+    std::cout << Size << std::endl;
+    std::cout << Size + m_offset << std::endl;
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
@@ -877,6 +881,9 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
                                states, i, dt, m_dx, gamma ) );
         }
         else if constexpr ( Type == solution_type::hllc ) {
+            if constexpr ( Order == approx_order::second ) {
+                std::cout << i << std::endl;
+            }
             delta[i] = -( 1 / m_dx )
                        * ( hllc<T, ARRAY_SIZE( Size, Order ), Order, false>(
                                states, i + 1, dt, m_dx, gamma )
@@ -1043,7 +1050,7 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::first, coordinate_type::spherical>
+                 approx_order::second, coordinate_type::spherical>
         fs_spherical_hllc( xmin, xmax, initial_state );
     fs_spherical_hllc.simulate( 0.25, gamma, true, "S" );
 }
