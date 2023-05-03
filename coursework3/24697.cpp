@@ -19,14 +19,19 @@ enum class solution_type : std::size_t {
     hll,
     hllc
 };
-enum class boundary_type : std::size_t { outflow, reflecting, custom };
+enum class boundary_type : std::size_t { outflow, reflecting };
 enum class coordinate_type : std::size_t { cartesian, spherical };
-enum class approx_order : std::size_t { first, second };
+enum class approx_order : std::size_t { first = 1, second = 2 };
 
 const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll",
                                                   "hllc" };
 const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
+
+template <std::size_t Size, approx_order Order>
+using integral =
+    std::integral_constant<std::size_t,
+                           Size + static_cast<std::size_t>( Order )>;
 
 // Stringify things :)
 #define STR( s ) #s
@@ -250,10 +255,10 @@ sgn( const state<T> & x ) {
 template <typename T>
 constexpr state<T>
 slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
-       const T dx, const T gamma ) {
+       const T dx, [[maybe_unused]] const T gamma ) {
     // Construct states of rho, v, & p
     // clang-format off
-    const state<T> q1{
+    /*const state<T> q1{
         Q1[0],
         Q1[1] / Q1[0],
         ( gamma - 1 ) * ( Q1[2] - ( ( Q1[1] * Q1[1] ) / ( 2 * Q1[0] ) ) )
@@ -267,33 +272,35 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
         Q3[0],
         Q3[1] / Q3[0],
         ( gamma - 1 ) * ( Q3[2] - ( ( Q3[1] * Q3[1] ) / ( 2 * Q3[0] ) ) )
-    };
+    };*/
     // clang-format on
-
     // Calculate slope for rho, v, & p using monotonized central-difference
     // limiter
-    const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
-        c{ ( q3 - q1 ) / dx };
-    const state<T> sgn_a{ sgn( 2 * a ) };
+    /*const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
+        c{ ( q3 - q1 ) / dx };*/
+    const auto a{ ( Q2 - Q1 ) / dx }, b{ ( Q3 - Q2 ) / dx },
+        c{ ( Q3 - Q1 ) / dx };
+    const state<T> sgn_a{ sgn( a ) };
 
 
-    const auto slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( 2 * b ) )
+    const auto slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( b ) )
                              * ( sgn_a + sgn( c ) ) };
     // clang-format off
     const auto slope{
         slope_factor *
         state<T> {
-            std::min<T>( std::min<T>( std::abs(  a[0] ), std::abs(  b[0] ) ), std::abs( c[0] ) ),
-            std::min<T>( std::min<T>( std::abs(  a[1] ), std::abs(  b[1] ) ), std::abs( c[1] ) ),
-            std::min<T>( std::min<T>( std::abs(  a[2] ), std::abs(  b[2] ) ), std::abs( c[2] ) )
+            std::min<T>( std::min<T>( std::abs( a[0] ), std::abs( b[0] ) ), std::abs( c[0] ) ),
+            std::min<T>( std::min<T>( std::abs( a[1] ), std::abs( b[1] ) ), std::abs( c[1] ) ),
+            std::min<T>( std::min<T>( std::abs( a[2] ), std::abs( b[2] ) ), std::abs( c[2] ) )
         }
     };
     // clang-format on
 
     // Convert back to rho, rho * v, E
-    return state<T>{ slope[0], slope[0] * slope[1],
+    /*return state<T>{ slope[0], slope[0] * slope[1],
                      ( slope[2] / ( gamma - 1 ) )
-                         - 0.5 * slope[0] * slope[1] * slope[1] };
+                         - 0.5 * slope[0] * slope[1] * slope[1] };*/
+    return slope;
 }
 
 template <typename T, std::size_t Size>
@@ -380,8 +387,8 @@ template <typename T, std::size_t Size,
 constexpr inline state<T>
 get_state( const std::array<state<T>, Size> & states, const std::size_t i,
            const T dx, const T gamma ) {
-    std::cout << "get_state: " << i - 1 << " " << i << " " << i + 1
-              << std::endl;
+    // std::cout << "get_state: " << i - 1 << " " << i << " " << i + 1
+    //           << std::endl;
     if ( Order == approx_order::second ) {
         if constexpr ( minus_half ) {
             return states[i]
@@ -436,8 +443,8 @@ template <typename T, std::size_t Size,
 constexpr flux<T>
 hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
-    std::cout << "hll: " << i << std::endl;
-    // L & R states
+    // std::cout << "hll: " << i << std::endl;
+    //  L & R states
     state<T> U_L, U_R;
     if constexpr ( Order == approx_order::first ) {
         U_L = states[i - 1];
@@ -445,32 +452,35 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
     else {
         if constexpr ( minus_half ) {
-            std::cout << "minus_half" << std::endl;
+            // std::cout << "minus_half" << std::endl;
             U_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
             U_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
         }
         else {
-            std::cout << "plus_half" << std::endl;
+            // std::cout << "plus_half" << std::endl;
             U_L = get_state<T, Size, Order, false>( states, i, dx, gamma );
             U_R = get_state<T, Size, Order, true>( states, i + 1, dx, gamma );
         }
     }
 
-    std::cout << "U: " << array_string( U_L ) << " " << array_string( U_R )
-              << std::endl;
+    // std::cout << "U: " << array_string( U_L ) << " " << array_string( U_R )
+    //<< std::endl;
 
     // L & R velocities
     const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
+    // std::cout << "v " << v_L << " " << v_R << std::endl;
 
     // L & R sound speed
     const auto c_L{ sound_speed( U_L, gamma ) },
         c_R{ sound_speed( U_R, gamma ) };
-    // L, R, & * pressure
+    // std::cout << "c: " << c_L << " " << c_R << std::endl;
+    //  L, R, & * pressure
     const auto p_L{ pressure( U_L, gamma ) }, p_R{ pressure( U_R, gamma ) };
     const auto p_star{ 0.5 * ( p_L + p_R )
                        - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
                              * ( c_R - c_L ) };
-    // L & R q
+    // std::cout << "p: " << p_L << " " << p_star << " " << p_R << std::endl;
+    //  L & R q
     const auto q_L{ p_star <= p_L ?
                         1 :
                         std::sqrt( 1
@@ -481,8 +491,10 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
                         std::sqrt( 1
                                    + ( gamma + 1 ) * ( ( p_star / p_R ) - 1 )
                                          / ( 2 * gamma ) ) };
-    // L & R wavespeeds
+    // std::cout << "q " << q_L << " " << q_R << std::endl;
+    //  L & R wavespeeds
     const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
+    // std::cout << "S: " << S_L << " " << S_R << std::endl;
 
     const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
     // L, R & HLL fluxes
@@ -498,7 +510,7 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
     else {
         std::cout << "ERROR: Invalid branch reached." << std::endl;
-        assert( false );
+        // assert( false );
         return flux<T>{ 0., 0., 0. };
     }
 }
@@ -610,6 +622,10 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
 }
 
 
+#define ARRAY_SIZE( Size, Order ) \
+    ( Size ) + 2 * ( static_cast<std::size_t>( ( Order ) ) )
+
+
 // Fluid dynamics solver definition
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
           boundary_type Rbc, approx_order Order = approx_order::first,
@@ -621,9 +637,10 @@ class fluid_solver
     fluid_solver( const T x_min, const T x_max,
                   const std::array<state<T>, Size> & initial_state ) :
         m_dx( ( x_max - x_min ) / ( incl_endpoint ? Size - 1 : Size ) ),
+        m_offset( static_cast<std::size_t>( Order ) ),
         m_x( linspace<T, Size, incl_endpoint>( x_min, x_max ) ) {
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
-            m_state[i + 1] = initial_state[i];
+            m_state[i + m_offset] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
@@ -632,10 +649,11 @@ class fluid_solver
                   const std::array<T, Size> & q2,
                   const std::array<T, Size> & q3 ) :
         m_dx( ( x_max - x_min ) / ( incl_endpoint ? Size - 1 : Size ) ),
+        m_offset( static_cast<std::size_t>( Order ) ),
         m_x( linspace<T, Size, incl_endpoint>( x_min, x_max ) ) {
         const auto initial_state{ construct_state( q1, q2, q3 ) };
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
-            m_state[i + 1] = initial_state[i];
+            m_state[i + m_offset] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
@@ -648,7 +666,7 @@ class fluid_solver
         m_x = linspace<T, Size, incl_endpoint>( x_min, x_max );
 
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
-            m_state[i + 1] = initial_state[i];
+            m_state[i + m_offset] = initial_state[i];
         }
         m_previous_state = m_state;
         apply_boundary_conditions();
@@ -697,16 +715,17 @@ class fluid_solver
 
     private:
     [[nodiscard]] constexpr auto apply_boundary_conditions() noexcept;
-    [[nodiscard]] constexpr std::array<state<T>, Size + 2>
-    d_state( const std::array<state<T>, Size + 2> & states,
+    [[nodiscard]] constexpr std::array<state<T>, ARRAY_SIZE( Size, Order )>
+    d_state( const std::array<state<T>, ARRAY_SIZE( Size, Order )> & states,
              [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept;
 
-    T m_dx;
+    T           m_dx;     // Difference between cells
+    std::size_t m_offset; // Offset due to ghost cells
     // An array of state arrays (3 values) with length Size + 2, 1 ghost cell
     // each side
-    std::array<state<T>, Size + 2> m_state;
-    std::array<state<T>, Size + 2> m_previous_state;
-    std::array<T, Size>            m_x;
+    std::array<state<T>, ARRAY_SIZE( Size, Order )> m_state;
+    std::array<state<T>, ARRAY_SIZE( Size, Order )> m_previous_state;
+    std::array<T, Size>                             m_x;
 };
 
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
@@ -729,7 +748,6 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
         return 0.3 * m_dx / max;
     };
 
-    std::cout << solution_string[static_cast<std::size_t>( Type )] << std::endl;
     T time_step = CFL_condition();
     for ( T t{ 0 }; t <= endpoint; t += time_step ) {
         if constexpr ( Order == approx_order::first ) {
@@ -745,7 +763,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
         }
 
         if constexpr ( Coords == coordinate_type::spherical ) {
-            for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+            for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
                 auto &        Q{ m_state[i] };
                 const flux<T> spherical_source{
                     2 * Q[1] / ( m_x[i - 1] + 0.25 * m_dx ),
@@ -766,11 +784,10 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
         const auto Q1{ q1() };
         const auto Q2{ q2() };
         const auto Q3{ q3() };
-
         write_to_file<T, Size>(
             opt_id + std::to_string( endpoint ) + "s_"
                 + solution_string[static_cast<std::size_t>( Type )] + "_"
-                + approx_string[static_cast<std::size_t>( Order )]
+                + approx_string[static_cast<std::size_t>( Order ) - 1]
                 + "_state.csv",
             { m_x, Q1, v( Q1, Q2 ), pressure( Q1, Q2, Q3, gamma ),
               e( Q1, Q2, Q3, gamma ) },
@@ -788,26 +805,46 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords,
              incl_endpoint>::apply_boundary_conditions() noexcept {
     switch ( Lbc ) {
     case boundary_type::outflow: {
-        m_state[0] = m_state[1];
-        m_previous_state[0] = m_previous_state[1];
+        std::for_each_n( m_state.begin(), m_offset,
+                         [*this]( auto & x ) { x = m_state[m_offset]; } );
+        std::for_each_n(
+            m_previous_state.begin(), m_offset,
+            [*this]( auto & x ) { x = m_previous_state[m_offset]; } );
     } break;
     case boundary_type::reflecting: {
-        m_state[0] = m_state[1];
-        m_previous_state[0] = m_previous_state[1];
-        m_state[0][1] *= -1;
-        m_previous_state[0][1] *= -1;
+        std::for_each_n( m_state.begin(), m_offset, [*this]( auto & x ) {
+            x = m_state[m_offset];
+            x[1] *= -1;
+        } );
+        std::for_each_n( m_previous_state.begin(), m_offset,
+                         [*this]( auto & x ) {
+                             x = m_previous_state[m_offset];
+                             x[1] *= -1;
+                         } );
     } break;
     }
+
     switch ( Rbc ) {
     case boundary_type::outflow: {
-        m_state[Size + 1] = m_state[Size];
-        m_previous_state[Size + 1] = m_previous_state[Size];
+        std::for_each_n(
+            m_state.begin() + m_offset + Size, m_offset,
+            [*this]( auto & x ) { x = m_state[m_offset + Size - 1]; } );
+        std::for_each_n( m_previous_state.begin() + m_offset + Size, m_offset,
+                         [*this]( auto & x ) {
+                             x = m_previous_state[m_offset + Size - 1];
+                         } );
     } break;
     case boundary_type::reflecting: {
-        m_state[Size + 1] = m_state[Size];
-        m_previous_state[Size + 1] = m_previous_state[Size];
-        m_state[Size + 1][1] *= -1;
-        m_previous_state[Size + 1][1] *= -1;
+        std::for_each_n( m_state.begin() + m_offset + Size, m_offset,
+                         [*this]( auto & x ) {
+                             x = m_state[m_offset];
+                             x[1] *= -1.;
+                         } );
+        std::for_each_n( m_previous_state.begin() + m_offset + Size, m_offset,
+                         [*this]( auto & x ) {
+                             x = m_previous_state[m_offset];
+                             x[1] *= -1.;
+                         } );
     } break;
     }
 }
@@ -815,15 +852,13 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords,
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
           boundary_type Rbc, approx_order Order, coordinate_type Coords,
           bool incl_endpoint>
-[[nodiscard]] constexpr std::array<state<T>, Size + 2>
+[[nodiscard]] constexpr std::array<state<T>, ARRAY_SIZE( Size, Order )>
 fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
-    const std::array<state<T>, Size + 2> & states, [[maybe_unused]] const T t,
-    const T dt, const T gamma ) noexcept {
-    fluid_algorithm<T, Size + 2> f_half;
-
-    std::array<state<T>, Size + 2> delta{};
-    for ( std::size_t i{ 1 }; i <= Size; ++i ) {
-        std::cout << "d_state: " << i << std::endl;
+    const std::array<state<T>, ARRAY_SIZE( Size, Order )> & states,
+    [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept {
+    fluid_algorithm<T, ARRAY_SIZE( Size, Order )>   f_half;
+    std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
+    for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
                        * ( lax_friedrichs( states, i, dt, m_dx, gamma )
@@ -836,17 +871,17 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
         }
         else if constexpr ( Type == solution_type::hll ) {
             delta[i] = -( 1 / m_dx )
-                       * ( hll<T, Size + 2, Order, false>( states, i + 1, dt,
-                                                           m_dx, gamma )
-                           - hll<T, Size + 2, Order, true>( states, i, dt, m_dx,
-                                                            gamma ) );
+                       * ( hll<T, ARRAY_SIZE( Size, Order ), Order, false>(
+                               states, i + 1, dt, m_dx, gamma )
+                           - hll<T, ARRAY_SIZE( Size, Order ), Order, true>(
+                               states, i, dt, m_dx, gamma ) );
         }
         else if constexpr ( Type == solution_type::hllc ) {
             delta[i] = -( 1 / m_dx )
-                       * ( hllc<T, Size + 2, Order, false>( states, i + 1, dt,
-                                                            m_dx, gamma )
-                           - hllc<T, Size + 2, Order, true>( states, i, dt,
-                                                             m_dx, gamma ) );
+                       * ( hllc<T, ARRAY_SIZE( Size, Order ), Order, false>(
+                               states, i + 1, dt, m_dx, gamma )
+                           - hllc<T, ARRAY_SIZE( Size, Order ), Order, true>(
+                               states, i, dt, m_dx, gamma ) );
         }
     }
 
@@ -911,7 +946,7 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::second>
+                 approx_order::first>
         fs_A_hllc( xmin, xmax, initial_state );
     fs_A_hllc.simulate( 0.2, gamma, true, "A" );
 
@@ -951,13 +986,14 @@ main() {
     fs_B_lw.simulate( 0.012, gamma, true, "B" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
-                 boundary_type::outflow, boundary_type::outflow>
+                 boundary_type::outflow, boundary_type::outflow,
+                 approx_order::first>
         fs_B_hll( xmin, xmax, initial_state );
     fs_B_hll.simulate( 0.012, gamma, true, "B" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::second>
+                 approx_order::first>
         fs_B_hllc( xmin, xmax, initial_state );
     fs_B_hllc.simulate( 0.012, gamma, true, "B" );
 
@@ -1001,13 +1037,13 @@ main() {
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hll,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::second, coordinate_type::spherical>
+                 approx_order::first, coordinate_type::spherical>
         fs_spherical_hll( xmin, xmax, initial_state );
     fs_spherical_hll.simulate( 0.25, gamma, true, "S" );
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>, solution_type::hllc,
                  boundary_type::outflow, boundary_type::outflow,
-                 approx_order::second, coordinate_type::spherical>
+                 approx_order::first, coordinate_type::spherical>
         fs_spherical_hllc( xmin, xmax, initial_state );
     fs_spherical_hllc.simulate( 0.25, gamma, true, "S" );
 }

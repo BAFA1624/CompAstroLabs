@@ -86,7 +86,6 @@ for filename in os.listdir():
 plt.legend()
 plt.savefig("shocktube_B.png")
 
-
 # Spherical coords shocktube
 
 
