@@ -10,6 +10,24 @@
 #include <utility>
 #include <vector>
 
+
+// Class enum for selecting between type of algorithm.
+// The value of each enum name is set to the required no. of ghost cells
+enum class solution_type : std::size_t {
+    lax_friedrichs,
+    lax_wendroff,
+    hll,
+    hllc
+};
+enum class boundary_type : std::size_t { outflow, reflecting, custom };
+enum class coordinate_type : std::size_t { cartesian, spherical };
+enum class approx_order : std::size_t { first, second };
+
+const std::array<std::string, 4> solution_string{ "lax_friedrichs",
+                                                  "lax_wendroff", "hll",
+                                                  "hllc" };
+const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
+
 // Stringify things :)
 #define STR( s ) #s
 
@@ -221,7 +239,12 @@ using flux = state<T, Size>;
 template <typename T>
 constexpr inline T
 sgn( const T x ) {
-    return ( T( 0 ) < x ) - ( val < T( 0 ) );
+    return ( T( 0 ) < x ) - ( x < T( 0 ) );
+}
+template <typename T>
+constexpr inline state<T>
+sgn( const state<T> & x ) {
+    return state<T>{ sgn( x[0] ), sgn( x[1] ), sgn( x[2] ) };
 }
 
 template <typename T>
@@ -230,38 +253,39 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
        const T dx, const T gamma ) {
     // Construct states of rho, v, & p
     // clang-format off
-    const state<F> q1{
+    const state<T> q1{
         Q1[0],
-        v(Q1),
-        pressure(Q1, gamma)
+        Q1[1] / Q1[0],
+        ( gamma - 1 ) * ( Q1[2] - ( ( Q1[1] * Q1[1] ) / ( 2 * Q1[0] ) ) )
     };
-    const state<F> q2{
+    const state<T> q2{
         Q2[0],
-        v(Q2),
-        pressure(Q2, gamma)
+        Q2[1] / Q2[0],
+        ( gamma - 1 ) * ( Q2[2] - ( ( Q2[1] * Q2[1] ) / ( 2 * Q2[0] ) ) )
     };
-    const state<F> q3{
+    const state<T> q3{
         Q3[0],
-        v(Q3),
-        pressure(Q3, gamma)
+        Q3[1] / Q3[0],
+        ( gamma - 1 ) * ( Q3[2] - ( ( Q3[1] * Q3[1] ) / ( 2 * Q3[0] ) ) )
     };
     // clang-format on
 
     // Calculate slope for rho, v, & p using monotonized central-difference
     // limiter
-    const T a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx }, c{ ( q3 - q1 ) / dx };
-    const T sgn_a{ sgn( 2 * a ) };
+    const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
+        c{ ( q3 - q1 ) / dx };
+    const state<T> sgn_a{ sgn( 2 * a ) };
 
 
-    const T slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( 2 * b ) )
-                          * ( sgn_a + sgn( c ) ) };
+    const auto slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( 2 * b ) )
+                             * ( sgn_a + sgn( c ) ) };
     // clang-format off
-    const  slope{
+    const auto slope{
         slope_factor *
         state<T> {
-            std::min<T>( std::min<T>( std::abs( 2 * a[0] ), std::abs( 2 * b[0] ) ), std::abs( c[0] ) ),
-            std::min<T>( std::min<T>( std::abs( 2 * a[1] ), std::abs( 2 * b[1] ) ), std::abs( c[1] ) ),
-            std::min<T>( std::min<T>( std::abs( 2 * a[2] ), std::abs( 2 * b[2] ) ), std::abs( c[2] ) )
+            std::min<T>( std::min<T>( std::abs(  a[0] ), std::abs(  b[0] ) ), std::abs( c[0] ) ),
+            std::min<T>( std::min<T>( std::abs(  a[1] ), std::abs(  b[1] ) ), std::abs( c[1] ) ),
+            std::min<T>( std::min<T>( std::abs(  a[2] ), std::abs(  b[2] ) ), std::abs( c[2] ) )
         }
     };
     // clang-format on
@@ -350,6 +374,33 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
 }
 
 
+template <typename T, std::size_t Size,
+          approx_order Order = approx_order::first,
+          const bool   minus_half = true>
+constexpr inline state<T>
+get_state( const std::array<state<T>, Size> & states, const std::size_t i,
+           const T dx, const T gamma ) {
+    std::cout << "get_state: " << i - 1 << " " << i << " " << i + 1
+              << std::endl;
+    if ( Order == approx_order::second ) {
+        if constexpr ( minus_half ) {
+            return states[i]
+                   - 0.5 * dx
+                         * slope( states[i - 1], states[i], states[i + 1], dx,
+                                  gamma );
+        }
+        else {
+            return states[i]
+                   + 0.5 * dx
+                         * slope( states[i - 1], states[i], states[i + 1], dx,
+                                  gamma );
+        }
+    }
+    else {
+        return states[i];
+    }
+}
+
 template <typename T, std::size_t Size>
 using fluid_algorithm =
     std::function<flux<T>( const std::array<T, Size> &, const std::size_t,
@@ -380,12 +431,33 @@ lax_wendroff( const std::array<state<T>, Size> & state, const std::size_t i,
               gamma );
 }
 
-template <typename T, std::size_t Size>
+template <typename T, std::size_t Size,
+          approx_order Order = approx_order::first, bool minus_half = true>
 constexpr flux<T>
 hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
+    std::cout << "hll: " << i << std::endl;
     // L & R states
-    const auto &U_L{ states[i - 1] }, U_R{ states[i] };
+    state<T> U_L, U_R;
+    if constexpr ( Order == approx_order::first ) {
+        U_L = states[i - 1];
+        U_R = states[i];
+    }
+    else {
+        if constexpr ( minus_half ) {
+            std::cout << "minus_half" << std::endl;
+            U_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
+            U_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
+        }
+        else {
+            std::cout << "plus_half" << std::endl;
+            U_L = get_state<T, Size, Order, false>( states, i, dx, gamma );
+            U_R = get_state<T, Size, Order, true>( states, i + 1, dx, gamma );
+        }
+    }
+
+    std::cout << "U: " << array_string( U_L ) << " " << array_string( U_R )
+              << std::endl;
 
     // L & R velocities
     const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
@@ -431,13 +503,28 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
 }
 
-template <typename T, std::size_t Size>
+template <typename T, std::size_t Size,
+          approx_order Order = approx_order::first, bool minus_half = true>
 constexpr flux<T>
 hllc( const std::array<state<T>, Size> & states, const std::size_t i,
       [[maybe_unused]] const T dt, [[maybe_unused]] const T dx,
       const T gamma ) {
     // L & R states
-    const auto &Q_L{ states[i - 1] }, Q_R{ states[i] };
+    state<T> Q_L{}, Q_R{};
+    if constexpr ( Order == approx_order::first ) {
+        Q_L = states[i - 1];
+        Q_R = states[i];
+    }
+    else {
+        if constexpr ( minus_half ) {
+            Q_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
+            Q_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
+        }
+        else {
+            Q_L = get_state<T, Size, Order, false>( states, i, dx, gamma );
+            Q_R = get_state<T, Size, Order, true>( states, i + 1, dx, gamma );
+        }
+    }
     // L & R velocities
     const auto v_L{ v( Q_L ) }, v_R{ v( Q_R ) };
     // L & R sound speed
@@ -521,23 +608,6 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
 
     return F;
 }
-
-// Class enum for selecting between type of algorithm.
-// The value of each enum name is set to the required no. of ghost cells
-enum class solution_type : std::size_t {
-    lax_friedrichs,
-    lax_wendroff,
-    hll,
-    hllc
-};
-enum class boundary_type : std::size_t { outflow, reflecting, custom };
-enum class coordinate_type : std::size_t { cartesian, spherical };
-enum class approx_order : std::size_t { first, second };
-
-const std::array<std::string, 4> solution_string{ "lax_friedrichs",
-                                                  "lax_wendroff", "hll",
-                                                  "hllc" };
-const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
 
 
 // Fluid dynamics solver definition
@@ -659,6 +729,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
         return 0.3 * m_dx / max;
     };
 
+    std::cout << solution_string[static_cast<std::size_t>( Type )] << std::endl;
     T time_step = CFL_condition();
     for ( T t{ 0 }; t <= endpoint; t += time_step ) {
         if constexpr ( Order == approx_order::first ) {
@@ -752,6 +823,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
 
     std::array<state<T>, Size + 2> delta{};
     for ( std::size_t i{ 1 }; i <= Size; ++i ) {
+        std::cout << "d_state: " << i << std::endl;
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
                        * ( lax_friedrichs( states, i, dt, m_dx, gamma )
@@ -764,13 +836,17 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
         }
         else if constexpr ( Type == solution_type::hll ) {
             delta[i] = -( 1 / m_dx )
-                       * ( hll( states, i + 1, dt, m_dx, gamma )
-                           - hll( states, i, dt, m_dx, gamma ) );
+                       * ( hll<T, Size + 2, Order, false>( states, i + 1, dt,
+                                                           m_dx, gamma )
+                           - hll<T, Size + 2, Order, true>( states, i, dt, m_dx,
+                                                            gamma ) );
         }
         else if constexpr ( Type == solution_type::hllc ) {
             delta[i] = -( 1 / m_dx )
-                       * ( hllc( states, i + 1, dt, m_dx, gamma )
-                           - hllc( states, i, dt, m_dx, gamma ) );
+                       * ( hllc<T, Size + 2, Order, false>( states, i + 1, dt,
+                                                            m_dx, gamma )
+                           - hllc<T, Size + 2, Order, true>( states, i, dt,
+                                                             m_dx, gamma ) );
         }
     }
 
