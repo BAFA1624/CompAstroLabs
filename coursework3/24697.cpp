@@ -28,11 +28,6 @@ const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "hllc" };
 const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
 
-template <std::size_t Size, approx_order Order>
-using integral =
-    std::integral_constant<std::size_t,
-                           Size + static_cast<std::size_t>( Order )>;
-
 // Stringify things :)
 #define STR( s ) #s
 
