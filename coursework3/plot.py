@@ -1,9 +1,15 @@
+import matplotlib as mpl
 import matplotlib.gridspec as gs
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
 import re
+
+
+mpl.rcParams['mathtext.fontset'] = "cm"
+mpl.rcParams['font.sans-serif'] = "Times New Roman"
+mpl.rcParams['font.family'] = "sans-serif"
 
 
 delete_files = True
@@ -20,13 +26,17 @@ gamma = 1.4
 
 # Shocktube A:
 
-figA = plt.figure()
+figA = plt.figure(figsize=(8, 8))
 grid = gs.GridSpec(2, 2)
 ax1 = figA.add_subplot(grid[0, 0])
 ax2 = figA.add_subplot(grid[0, 1])
 ax3 = figA.add_subplot(grid[1, 0])
 ax4 = figA.add_subplot(grid[1, 1])
 
+ax1.set_title("Density")
+ax2.set_title("Velocity")
+ax3.set_title("Pressure")
+ax4.set_title("Specific Internal Energy")
 ax1.plot(a['x'], a['d'], 'k-')
 ax2.plot(a['x'], a['v'], 'k-')
 ax3.plot(a['x'], a['p'], 'k-')
@@ -49,24 +59,29 @@ for filename in os.listdir():
                  linewidth=1, label=sim_type)
         if delete_files:
             os.remove(filename)
-plt.legend()
+ax3.legend(loc='lower left')
+plt.tight_layout()
 plt.savefig("shocktube_A.png")
 
 # Shocktube B:
 # Shocktube spherical:
 
-figB = plt.figure()
+figB = plt.figure(figsize=(8, 8))
 ax1 = figB.add_subplot(grid[0, 0])
 ax2 = figB.add_subplot(grid[0, 1])
 ax3 = figB.add_subplot(grid[1, 0])
 ax4 = figB.add_subplot(grid[1, 1])
 
+ax1.set_title("Density")
+ax2.set_title("Velocity")
+ax3.set_title("Pressure")
+ax4.set_title("Specific Internal Energy")
 ax1.plot(b['x'], b['d'], 'k-')
 ax2.plot(b['x'], b['v'], 'k-')
 ax3.plot(b['x'], b['p'], 'k-')
 ax4.plot(b['x'], b['e'], 'k-')
 
-pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_([\w]+)_state\.csv")
+pattern = re.compile(r"B_[\d]*\.[\d]*s_([\w]+)_state\.csv")
 for filename in os.listdir():
     if pattern.match(filename):
         sim_type = re.findall(pattern, filename)[0]
@@ -83,9 +98,9 @@ for filename in os.listdir():
                  linewidth=1, label=sim_type)
         if delete_files:
             os.remove(filename)
-plt.legend()
+ax1.legend(loc='upper left')
+plt.tight_layout()
 plt.savefig("shocktube_B.png")
-
 
 # Spherical coords shocktube
 
@@ -94,13 +109,16 @@ def e(rho, p, gamma):
     return p / (rho * (gamma - 1))
 
 
-figS = plt.figure()
+figS = plt.figure(figsize=(8, 8))
 ax1 = figS.add_subplot(grid[0, 0])
 ax2 = figS.add_subplot(grid[0, 1])
 ax3 = figS.add_subplot(grid[1, 0])
 ax4 = figS.add_subplot(grid[1, 1])
 
-
+ax1.set_title("Density")
+ax2.set_title("Velocity")
+ax3.set_title("Pressure")
+ax4.set_title("Specific Internal Energy")
 ax1.plot(s['x'], s['rho'], 'k-')
 ax2.plot(s['x'], s['v_x'], 'k-')
 ax3.plot(s['x'], s['p'], 'k-')
@@ -123,7 +141,8 @@ for filename in os.listdir():
                  linewidth=1, label=sim_type)
         if delete_files:
             os.remove(filename)
-plt.legend()
+ax3.legend(loc='best')
+plt.tight_layout()
 plt.savefig("shocktube_S.png")
 
 plt.show()
