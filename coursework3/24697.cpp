@@ -218,6 +218,60 @@ using state = std::array<T, Size>;
 template <typename T, std::size_t Size = 3>
 using flux = state<T, Size>;
 
+template <typename T>
+constexpr inline T
+sgn( const T x ) {
+    return ( T( 0 ) < x ) - ( val < T( 0 ) );
+}
+
+template <typename T>
+constexpr state<T>
+slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
+       const T dx, const T gamma ) {
+    // Construct states of rho, v, & p
+    // clang-format off
+    const state<F> q1{
+        Q1[0],
+        v(Q1),
+        pressure(Q1, gamma)
+    };
+    const state<F> q2{
+        Q2[0],
+        v(Q2),
+        pressure(Q2, gamma)
+    };
+    const state<F> q3{
+        Q3[0],
+        v(Q3),
+        pressure(Q3, gamma)
+    };
+    // clang-format on
+
+    // Calculate slope for rho, v, & p using monotonized central-difference
+    // limiter
+    const T a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx }, c{ ( q3 - q1 ) / dx };
+    const T sgn_a{ sgn( 2 * a ) };
+
+
+    const T slope_factor{ 0.25 * sgn_a * ( sgn_a + sgn( 2 * b ) )
+                          * ( sgn_a + sgn( c ) ) };
+    // clang-format off
+    const  slope{
+        slope_factor *
+        state<T> {
+            std::min<T>( std::min<T>( std::abs( 2 * a[0] ), std::abs( 2 * b[0] ) ), std::abs( c[0] ) ),
+            std::min<T>( std::min<T>( std::abs( 2 * a[1] ), std::abs( 2 * b[1] ) ), std::abs( c[1] ) ),
+            std::min<T>( std::min<T>( std::abs( 2 * a[2] ), std::abs( 2 * b[2] ) ), std::abs( c[2] ) )
+        }
+    };
+    // clang-format on
+
+    // Convert back to rho, rho * v, E
+    return state<T>{ slope[0], slope[0] * slope[1],
+                     ( slope[2] / ( gamma - 1 ) )
+                         - 0.5 * slope[0] * slope[1] * slope[1] };
+}
+
 template <typename T, std::size_t Size>
 constexpr T
 pressure( const state<T, Size> & q, const T gamma ) {
