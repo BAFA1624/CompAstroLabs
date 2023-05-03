@@ -1,3 +1,18 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+#include <functional>
+#include <iostream>
+
+template <typename T>
+using Numeric = Concept;
+
+/*deriv_fda( const std::functio ){}*/
+
+int
+main() {}
+=======
+>>>>>>> hand-in
 #include <algorithm>
 #include <cmath>
 #include <concepts>
@@ -476,4 +491,9 @@ main() {
                     simulation_type::lax_friedrichs>
         lax_friedrichs_fs( xmin, xmax, init_q, init_v );
     lax_friedrichs_fs.simulate( end_time, dt, n_saves );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> coursework3_array
+>>>>>>> hand-in

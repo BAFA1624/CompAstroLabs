@@ -28,11 +28,14 @@ const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "hllc" };
 const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
 
+<<<<<<< HEAD
 template <std::size_t Size, approx_order Order>
 using integral =
     std::integral_constant<std::size_t,
                            Size + static_cast<std::size_t>( Order )>;
 
+=======
+>>>>>>> hand-in
 // Stringify things :)
 #define STR( s ) #s
 
@@ -256,6 +259,7 @@ template <typename T>
 constexpr state<T>
 slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
        const T dx, [[maybe_unused]] const T gamma ) {
+<<<<<<< HEAD
     // Construct states of rho, v, & p
     // clang-format off
     /*const state<T> q1{
@@ -278,6 +282,8 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
     // limiter
     /*const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
         c{ ( q3 - q1 ) / dx };*/
+=======
+>>>>>>> hand-in
     const auto a{ ( Q2 - Q1 ) / dx }, b{ ( Q3 - Q2 ) / dx },
         c{ ( Q3 - Q1 ) / dx };
     const state<T> sgn_a{ sgn( a ) };
@@ -295,11 +301,14 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
         }
     };
     // clang-format on
+<<<<<<< HEAD
 
     // Convert back to rho, rho * v, E
     /*return state<T>{ slope[0], slope[0] * slope[1],
                      ( slope[2] / ( gamma - 1 ) )
                          - 0.5 * slope[0] * slope[1] * slope[1] };*/
+=======
+>>>>>>> hand-in
     return slope;
 }
 
@@ -750,6 +759,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
 
     T time_step = CFL_condition();
     for ( T t{ 0 }; t <= endpoint; t += time_step ) {
+<<<<<<< HEAD
         if constexpr ( Order == approx_order::first ) {
             m_state =
                 m_state + time_step * d_state( m_state, t, time_step, gamma );
@@ -761,6 +771,13 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
                 * d_state( m_state + K1, t + time_step, time_step, gamma );
             m_state = m_state + 0.5 * ( K1 + K2 );
         }
+=======
+        const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
+        const auto K2 =
+            time_step
+            * d_state( m_state + K1, t + time_step, time_step, gamma );
+        m_state = m_state + 0.5 * ( K1 + K2 );
+>>>>>>> hand-in
 
         if constexpr ( Coords == coordinate_type::spherical ) {
             for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {

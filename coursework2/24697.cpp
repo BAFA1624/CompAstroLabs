@@ -2,7 +2,14 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+<<<<<<< HEAD
 #include <concepts>
+=======
+<<<<<<< HEAD
+=======
+#include <concepts>
+>>>>>>> coursework3_array
+>>>>>>> hand-in
 #include <fstream>
 #include <functional>
 #include <initializer_list>
@@ -13,28 +20,6 @@
 
 
 template <typename T>
-concept Numeric = requires( T x ) {
-    requires std::is_integral_v<T> || std::is_floating_point_v<T>;
-    requires !std::is_same_v<bool, T>;
-};
-
-template <std::floating_point F>
-F
-simpson_3_8( const std::function<F( const F )> & f, const F start, const F end,
-             const std::uint64_t N ) {
-    F       sum{ 0. };
-    const F dx{ ( end - start ) / N };
-    for ( std::uint64_t i{ 0 }; i < N; ++i ) {
-        const F a{ i * dx };
-        const F b{ ( i + 1 ) * dx };
-        sum += 0.125 * ( b - a )
-               * ( f( a ) + 3 * f( ( 2 * a + b ) / 3 )
-                   + 3 * f( ( a + 2 * b ) / 3 ) + f( b ) );
-    }
-    return sum;
-}
-
-template <Numeric T>
 std::vector<T>
 linspace( const T & start, const T & end, const std::uint64_t N,
           const bool include_endpoint = false ) {
@@ -54,22 +39,7 @@ linspace( const T & start, const T & end, const std::uint64_t N,
     return result;
 }
 
-template <Numeric T>
-std::vector<T>
-cumulative_sum( const typename std::vector<T>::const_iterator & cbegin,
-                const typename std::vector<T>::const_iterator & cend ) {
-    std::vector<T> result( std::distance( cbegin, cend ) );
-
-    T sum{ 0 };
-    std::transform( cbegin, cend, result.begin(), [&sum]( const T & x ) -> T {
-        sum += x;
-        return sum;
-    } );
-
-    return result;
-}
-
-template <Numeric T>
+template <typename T>
 double
 MSE( const std::vector<T> & predicted_values,
      const std::vector<T> & true_values ) {
@@ -95,24 +65,10 @@ random( const std::uint64_t s, const bool set_seed = false ) {
     return seed;
 }
 
-template <std::floating_point F>
-F
-random_f( const std::uint64_t s, const bool set_seed = false ) {
-    static std::uint64_t seed{ 0 };
-    if ( set_seed ) {
-        seed = s;
-    }
-
-    seed = ( seed * static_cast<std::uint64_t>( 16807 ) )
-           % static_cast<std::uint64_t>( 2147483647 );
-
-    return static_cast<F>( seed ) / static_cast<F>( 2147483647 );
-}
-
-template <Numeric T1, Numeric T2>
+template <typename T1, typename T2>
 void
 write_to_file( const std::string & fname, const std::vector<T1> & x,
-               const std::vector<T2> & y, const auto precision ) {
+               const std::vector<T2> & y, const std::uint64_t precision ) {
     const std::uint64_t n_rows{ std::min( x.size(), y.size() ) };
     std::ofstream       f( fname, std::ios_base::out );
     for ( std::uint64_t i{ 0 }; i < n_rows; ++i ) {
@@ -123,7 +79,7 @@ write_to_file( const std::string & fname, const std::vector<T1> & x,
 
 enum class distr_type { flat, rejection, importance, cumulative };
 
-template <std::floating_point F>
+template <typename F>
 class distribution
 {
     public:
@@ -221,7 +177,7 @@ class distribution
     std::function<F( const F )> m_f_inverse;
 };
 
-template <std::floating_point F>
+template <typename F>
 void
 distribution<F>::initialize_distribution(
     const distr_type type, const std::uint64_t seed, const std::uint64_t N,
@@ -248,14 +204,14 @@ distribution<F>::initialize_distribution(
     m_f_inverse = f_inverse;
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform( const F x ) const noexcept {
     return ( m_type == distr_type::importance ) ? transform_importance( x ) :
                                                   transform_nonweighted( x );
 }
 
-template <std::floating_point F>
+template <typename F>
 std::vector<F>
 distribution<F>::transform( const std::vector<F> & v ) const noexcept {
     std::vector<F> result( v.size() );
@@ -282,7 +238,7 @@ distribution<F>::transform( const std::vector<F> & v ) const noexcept {
     return result;
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform_nonweighted( const F x ) const noexcept {
     const F xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
@@ -292,7 +248,7 @@ distribution<F>::transform_nonweighted( const F x ) const noexcept {
              + m_rmin );
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform_importance( const F x ) const noexcept {
     const F    xval{ ( x - m_dmin ) / ( m_dmax - m_dmin ) };
@@ -301,13 +257,13 @@ distribution<F>::transform_importance( const F x ) const noexcept {
            / ( ( m_rmax - m_rmin ) * static_cast<F>( m_N ) );
 }
 
-template <std::floating_point F>
+template <typename F>
 F
 distribution<F>::transform_cumulative( const F x ) const noexcept {
     return m_f_inverse( ( x - m_dmin ) / ( m_dmax - m_dmin ) );
 }
 
-template <std::floating_point F>
+template <typename F>
 void
 distribution<F>::gen_distribution(
     const distr_type type, const std::uint64_t seed, const std::uint64_t N,
@@ -380,59 +336,9 @@ distribution<F>::gen_distribution(
 }
 
 
-template <std::floating_point F>
-class position
-{
-    public:
-    position( const F x, const F y, const F z ) : m_pos( { x, y, z } ) {}
-
-    [[nodiscard]] std::array<F, 3> & pos() const noexcept { return m_pos; }
-    void set_pos( const std::array<F, 3> & p ) noexcept { m_pos = p; }
-    [[nodiscard]] F x() const noexcept { return m_pos[0]; }
-    void            set_x( const F x ) noexcept { m_pos[0] = x; }
-    [[nodiscard]] F y() const noexcept { return m_pos[1]; }
-    void            set_y( const F y ) noexcept { m_pos[1] = y; }
-    [[nodiscard]] F z() const noexcept { return m_pos[2]; }
-    void            set_z( const F z ) noexcept { m_pos[2] = z; }
-
-    position & move( const F x, const F y, const F z ) noexcept {
-        m_pos[0] += x;
-        m_pos[1] += y;
-        m_pos[2] += z;
-        return *this;
-    }
-    position & move( const std::array<F, 3> & dr ) noexcept {
-        m_pos[0] += dr[0];
-        m_pos[1] += dr[1];
-        m_pos[2] += dr[2];
-        return *this;
-    }
-
-    private:
-    std::array<F, 3> m_pos;
-};
-
-template <std::floating_point F>
-class direction
-{
-    public:
-    direction( const F theta, const F phi ) : m_dir( { theta, phi } ) {}
-    direction( const std::array<F, 2> & dir ) : m_dir( dir ) {}
-
-    [[nodiscard]] std::array<F, 2> & dir() const noexcept { return m_dir; }
-    void set_dir( const std::array<F, 2> & d ) noexcept { m_dir = d; }
-    [[nodiscard]] F theta() const noexcept { return m_dir[0]; }
-    void            set_theta( const F t ) noexcept { m_dir[0] = t; }
-    [[nodiscard]] F phi() const noexcept { return m_dir[1]; }
-    void            set_phi( const F p ) noexcept { m_dir[1] = p; }
-
-    private:
-    std::array<F, 2> m_dir;
-};
-
 enum class scattering_type { isotropic, thomson };
 
-template <std::floating_point F>
+template <typename F>
 class photon
 {
     public:
@@ -494,7 +400,7 @@ class photon
     bool m_absorbed;
 };
 
-template <std::floating_point F>
+template <typename F>
 photon<F> &
 photon<F>::move( const F ds ) noexcept {
     const F s_theta{ std::sin( m_theta ) }, c_theta{ std::cos( m_theta ) },
@@ -507,7 +413,7 @@ photon<F>::move( const F ds ) noexcept {
     return *this;
 }
 
-template <std::floating_point F>
+template <typename F>
 photon<F> &
 photon<F>::scatter( const F theta, const F phi ) noexcept {
     m_theta = theta;
@@ -515,7 +421,7 @@ photon<F>::scatter( const F theta, const F phi ) noexcept {
     return *this;
 }
 
-template <std::floating_point F>
+template <typename F>
 photon<F> &
 track_photon_isotropic( photon<F> & p, distribution<F> & d_theta,
                         distribution<F> & d_phi, distribution<F> & d_albedo,
@@ -525,13 +431,13 @@ track_photon_isotropic( photon<F> & p, distribution<F> & d_theta,
     const F alpha{ tau / ( zmax - zmin ) };
 
     while ( p.z() <= zmax ) {
-        if ( p.z() < zmin ) [[unlikely]] {
+        if ( p.z() < zmin ) {
             p.set( 0, 0, 0, 0, 0, false );
         }
 
         p.move( d_tau.random() / alpha );
 
-        if ( d_albedo.random() >= albedo ) [[unlikely]] {
+        if ( d_albedo.random() >= albedo ) {
             std::cout << "Photon absorbed, this shouldn't be reached atm."
                       << std::endl;
             p.set_absorbed( true );
@@ -563,7 +469,7 @@ track_photon_thomson( photon<F> & p, distribution<F> & d_theta,
         }
 
         // Check for scattering
-        if ( d_albedo.random() >= albedo ) [[unlikely]] {
+        if ( d_albedo.random() >= albedo ) {
             std::cout << "Photon absorbed, this shouldn't happen." << std::endl;
             p.set_absorbed( true );
             return p;
@@ -604,20 +510,12 @@ track_photon_thomson( photon<F> & p, distribution<F> & d_theta,
         const F r{ p.x() * p.x() + p.y() * p.y() + p.z() * p.z() };
         p.set_theta( std::acos( p.z() * p.z() / r ) );
         p.set_phi( std::atan2( p.y(), p.x() ) );
-        if ( std::isnan( p.theta() ) || std::isnan( p.phi() )
-             || std::isinf( p.theta() ) || std::isinf( p.phi() ) ) {
-            std::cout << p_count << " " << p.theta() << " " << p.z() * p.z() / r
-                      << " " << p.phi() << std::endl;
-        }
-
-        // p.set_theta( theta_photon );
-        // p.set_phi( phi_photon );
     }
 
     return p;
 }
 
-template <std::floating_point F>
+template <typename F>
 std::vector<photon<F>>
 launch_simulation( const scattering_type type, const std::uint64_t N,
                    const std::uint64_t rand_seed, const F tau = 10,
@@ -683,7 +581,7 @@ launch_simulation( const scattering_type type, const std::uint64_t N,
     return photons;
 }
 
-template <std::floating_point F>
+template <typename F>
 std::tuple<std::vector<F>, std::vector<F>>
 norm_intensity( const std::vector<photon<F>> & photons,
                 const std::uint64_t            N ) {
@@ -717,33 +615,15 @@ norm_intensity( const std::vector<photon<F>> & photons,
     return { bins, intensity };
 }
 
-template <std::floating_point F>
-std::vector<photon<F>>
-thomson_scattering() {
-    return std::vector<photon<F>>{};
-}
-
-
-template <std::floating_point F>
-F
-mu( const F x ) {
-    return cos( x );
-}
-
-template <std::floating_point F>
+template <typename F>
 F
 p_mu( const F m ) {
     return 0.375 * ( 1 + pow( m, 2.0 ) );
 }
 
-template <std::floating_point F>
-F
-p_theta( const F theta ) {
-    return 0.375 * ( 1 + pow( cos( theta ), 2.0 ) ) * sin( theta );
-}
-
 int
 main() {
+    // Part 1.a
     const std::uint64_t N{ 1000000 };
     const std::uint64_t M{ 1000 };
 
@@ -813,9 +693,12 @@ main() {
 
     std::cout << "Done.\n" << std::endl;
 
+
+
+    // Part 1.b
+    std::cout << "1.b) Simulating isotropic scattering." << std::endl;
     const std::uint64_t seed{ 1 };
     const double optical_depth{ 10 }, albedo{ 1. }, zmin{ 0. }, zmax{ 1. };
-    std::cout << "1.b) Simulating isotropic scattering." << std::endl;
 
     const std::uint64_t n_photons{ 1000000 };
     const auto          isotropic_photons =
@@ -831,6 +714,8 @@ main() {
 
     std::cout << "Done.\n" << std::endl;
 
+
+    // Part 1.c
     std::cout << "1.c) Simulating Thomson scattering." << std::endl;
 
     const auto thomson_photons =

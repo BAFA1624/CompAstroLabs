@@ -191,7 +191,58 @@ ax1.set_title("Thomson Scattering")
 ax1.set_xlabel(r"$\theta$")
 ax1.set_ylabel(r"Normalized Intensity")
 ax1.tick_params(direction='in')
+ax1.legend()
+fig5.tight_layout()
 
+fig6 = plt.figure(figsize=(12, 12))
+ax1 = fig6.add_subplot(111)
+
+x1, y1 = read_data('1b_norm_intensity_tau_1.000000.csv')
+x2, y2 = read_data('1c_norm_intensity_tau_1.000000.csv')
+
+ax1.plot(np.arccos(x1), y1, c='k', marker='o', markersize=5,
+         ls='none', label='Isotropic Scattering')
+ax1.plot(np.arccos(x2), y2, c='k', marker='^', markersize=5,
+         ls='none', label='Thomson Scattering')
+
+ax1.set_title(r'$\tau = 1$')
+ax1.set_xlabel(r'$\theta$')
+ax1.set_ylabel(r'Normalized Intensity')
+ax1.tick_params(direction='in')
+ax1.legend()
+
+fig7 = plt.figure(figsize=(12, 12))
+ax1 = fig7.add_subplot(111)
+
+x1, y1 = read_data('1b_norm_intensity_tau_10.000000.csv')
+x2, y2 = read_data('1c_norm_intensity_tau_10.000000.csv')
+
+ax1.plot(np.arccos(x1), y1, c='k', marker='o', markersize=5,
+         ls='none', label='Isotropic Scattering')
+ax1.plot(np.arccos(x2), y2, c='k', marker='^', markersize=5,
+         ls='none', label='Thomson Scattering')
+
+ax1.set_title(r'$\tau = 10$')
+ax1.set_xlabel(r'$\theta$')
+ax1.set_ylabel(r'Normalized Intensity')
+ax1.tick_params(direction='in')
+ax1.legend()
+
+fig8 = plt.figure(figsize=(12, 12))
+ax1 = fig8.add_subplot(111)
+
+x1, y1 = read_data('1b_norm_intensity_tau_20.000000.csv')
+x2, y2 = read_data('1c_norm_intensity_tau_20.000000.csv')
+
+ax1.plot(np.arccos(x1), y1, c='k', marker='o', markersize=5,
+         ls='none', label='Isotropic Scattering')
+ax1.plot(np.arccos(x2), y2, c='k', marker='^', markersize=5,
+         ls='none', label='Thomson Scattering')
+
+ax1.set_title(r'$\tau = 20$')
+ax1.set_xlabel(r'$\theta$')
+ax1.set_ylabel(r'Normalized Intensity')
+ax1.tick_params(direction='in')
 ax1.legend()
 fig5.tight_layout()
 

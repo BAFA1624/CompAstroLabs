@@ -26,11 +26,7 @@
 	"objects" : 
 	[
 		{
-<<<<<<< HEAD
-			"jsonFile" : "codemodel-v2-d35c8ddc7e577ae92eee.json",
-=======
 			"jsonFile" : "codemodel-v2-16521f5794ebfac9645d.json",
->>>>>>> hand-in
 			"kind" : "codemodel",
 			"version" : 
 			{
@@ -39,11 +35,7 @@
 			}
 		},
 		{
-<<<<<<< HEAD
-			"jsonFile" : "cache-v2-95540a95f441f5e8df9b.json",
-=======
 			"jsonFile" : "cache-v2-dfa4a64ef699973a5c02.json",
->>>>>>> hand-in
 			"kind" : "cache",
 			"version" : 
 			{
@@ -52,11 +44,7 @@
 			}
 		},
 		{
-<<<<<<< HEAD
-			"jsonFile" : "cmakeFiles-v1-8bf78e7077e73d7ec0b2.json",
-=======
 			"jsonFile" : "cmakeFiles-v1-bfa075077dde9736781c.json",
->>>>>>> hand-in
 			"kind" : "cmakeFiles",
 			"version" : 
 			{
@@ -65,11 +53,7 @@
 			}
 		},
 		{
-<<<<<<< HEAD
-			"jsonFile" : "toolchains-v1-fbbed820596684d4f789.json",
-=======
 			"jsonFile" : "toolchains-v1-25a1c7032c7d4607d6c5.json",
->>>>>>> hand-in
 			"kind" : "toolchains",
 			"version" : 
 			{
@@ -106,11 +90,7 @@
 				"responses" : 
 				[
 					{
-<<<<<<< HEAD
-						"jsonFile" : "cache-v2-95540a95f441f5e8df9b.json",
-=======
 						"jsonFile" : "cache-v2-dfa4a64ef699973a5c02.json",
->>>>>>> hand-in
 						"kind" : "cache",
 						"version" : 
 						{
@@ -119,11 +99,7 @@
 						}
 					},
 					{
-<<<<<<< HEAD
-						"jsonFile" : "codemodel-v2-d35c8ddc7e577ae92eee.json",
-=======
 						"jsonFile" : "codemodel-v2-16521f5794ebfac9645d.json",
->>>>>>> hand-in
 						"kind" : "codemodel",
 						"version" : 
 						{
@@ -132,11 +108,7 @@
 						}
 					},
 					{
-<<<<<<< HEAD
-						"jsonFile" : "toolchains-v1-fbbed820596684d4f789.json",
-=======
 						"jsonFile" : "toolchains-v1-25a1c7032c7d4607d6c5.json",
->>>>>>> hand-in
 						"kind" : "toolchains",
 						"version" : 
 						{
@@ -145,11 +117,7 @@
 						}
 					},
 					{
-<<<<<<< HEAD
-						"jsonFile" : "cmakeFiles-v1-8bf78e7077e73d7ec0b2.json",
-=======
 						"jsonFile" : "cmakeFiles-v1-bfa075077dde9736781c.json",
->>>>>>> hand-in
 						"kind" : "cmakeFiles",
 						"version" : 
 						{
