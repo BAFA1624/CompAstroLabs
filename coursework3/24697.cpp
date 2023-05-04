@@ -253,6 +253,25 @@ sgn( const state<T> & x ) {
 }
 
 template <typename T>
+constexpr inline T
+minmod( const T a, const T b ) {
+    const T sgn_ab{ sign( a * b ) };
+    if ( sgn_ab < 0 ) {
+        return 0;
+    }
+    if ( std::abs( a ) < std::abs( b ) ) {
+        return a;
+    }
+    return b;
+}
+template <typename T>
+constexpr inline state<T>
+minmod( const state<T> a, const state<T> b ) {
+    return state<T>{ minmod( a[0], b[0] ), minmod( a[1], b[1] ),
+                     minmod( a[2], b[2] ) };
+}
+
+template <typename T>
 constexpr state<T>
 slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
        const T dx, [[maybe_unused]] const T gamma ) {
