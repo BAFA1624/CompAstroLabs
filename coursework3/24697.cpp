@@ -818,7 +818,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         // Debug statement to check for loop is actually
         // operating in parallel
-        // std::cout << omp_get_thread_num() << std::endl;
+        std::cout << omp_get_thread_num() << std::endl;
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
                        * ( lax_friedrichs( states, i, dt, m_dx, gamma )
