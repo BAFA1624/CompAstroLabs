@@ -705,11 +705,17 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
 
     T time_step = CFL_condition();
     for ( T t{ 0 }; t <= endpoint; t += time_step ) {
-        const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
-        const auto K2 =
-            time_step
-            * d_state( m_state + K1, t + time_step, time_step, gamma );
-        m_state = m_state + 0.5 * ( K1 + K2 );
+        if constexpr ( Order == approx_order::first ) {
+            m_state =
+                m_state + time_step * d_state( m_state, t, time_step, gamma );
+        }
+        else {
+            const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
+            const auto K2 =
+                time_step
+                * d_state( m_state + K1, t + time_step, time_step, gamma );
+            m_state = m_state + 0.5 * ( K1 + K2 );
+        }
 
         if constexpr ( Coords == coordinate_type::spherical ) {
             for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
