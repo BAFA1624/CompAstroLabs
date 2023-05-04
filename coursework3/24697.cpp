@@ -20,10 +20,16 @@ enum class solution_type : std::size_t {
     hll,
     hllc
 };
+// Indicates boundary type on each side of the problem
 enum class boundary_type : std::size_t { outflow, reflecting };
+// Coordinate types for Q1 & Q2
 enum class coordinate_type : std::size_t { cartesian, spherical };
+// Order of approximation, also indicates number of ghost cells to store
+// each side
 enum class approx_order : std::size_t { first = 1, second = 2 };
 
+// Strings for including name of alogrithm in name of output .cscv files
+// & order of apprximation
 const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "lax_wendroff", "hll",
                                                   "hllc" };
@@ -37,8 +43,19 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
 //  - Memberwise multiplication/division by floating point values.
 
 // Some macros to automatically define operator overloads for array + array,
-// array + var, var * array, etc.
+// array + var, var * array, etc. Automatically prints out the operator overload
+// for a specified operator, op.
 
+// All REF... methods alter the internal state of the array closest to the lhs.
+// For any +=, -=, *=, etc operators.
+// ALL VAL... methods do not alter the internal state of the array closest to
+// the lhs, but make a full copy of the array in question so that it can be
+// altered instead calling the op= operator -> the REF... version of the
+// operator. For +, -, *, etc operators.
+
+// op= memberwise operations between two arrays ( e.g arr1 += arr2 )
+// In the calling code it looks like, REF_OP_ARR_ARR( + ) -> operator+=(...)
+// {...}
 #define REF_OP_ARR_ARR( op )                                            \
     template <typename T, std::size_t Size>                             \
     inline constexpr std::array<T, Size> & operator op(                 \
@@ -46,6 +63,8 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
         for ( std::size_t i{ 0 }; i < Size; ++i ) { lhs[i] op rhs[i]; } \
         return lhs;                                                     \
     }
+// op= memberwise operations between two arrays of size 3
+// ( e.g arr1 += arr2, where both have exactly 3 members )
 #define REF_OP_ARR_ARR_3( op )                                   \
     template <typename T>                                        \
     inline constexpr std::array<T, 3> & operator op(             \
@@ -55,6 +74,7 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
         lhs[2] op rhs[2];                                        \
         return lhs;                                              \
     }
+// op= between an array and a const value, e.g. arr1 += 3
 #define REF_OP_ARR_CONST( op )                                       \
     template <typename T1, typename T2, std::size_t Size>            \
     inline constexpr std::array<T1, Size> & operator op(             \
@@ -62,6 +82,7 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
         for ( std::size_t i{ 0 }; i < Size; ++i ) { lhs[i] op rhs; } \
         return lhs;                                                  \
     }
+// Specialization for arrays of size 3
 #define REF_OP_ARR_CONST_3( op )                                               \
     template <typename T1, typename T2>                                        \
     inline constexpr std::array<T1, 3> & operator op( std::array<T1, 3> & lhs, \
@@ -71,6 +92,7 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
         lhs[2] op rhs;                                                         \
         return lhs;                                                            \
     }
+// The reverse of above, 3 += arr -> arr ( with all members incremented by 3 )
 #define REF_OP_CONST_ARR( op )                                      \
     template <typename T1, typename T2, std::size_t Size>           \
     inline constexpr std::array<T2, Size> & operator op(            \
@@ -78,6 +100,7 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
         for ( std::size_t i = 0; i < Size; ++i ) { rhs[i] op lhs; } \
         return lhs;                                                 \
     }
+// Size 3 specialization
 #define REF_OP_CONST_ARR_3( op )                      \
     template <typename T1, typename T2>               \
     inline constexpr std::array<T2, 3> & operator op( \
@@ -87,6 +110,7 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
         rhs[2] op lhs;                                \
         return rhs;                                   \
     }
+// Macro which calls all previous for the specified operator, op
 #define REF_OP( op )         \
     REF_OP_ARR_ARR_3( op )   \
     REF_OP_ARR_ARR( op )     \
@@ -95,6 +119,9 @@ const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
     REF_OP_CONST_ARR_3( op ) \
     REF_OP_CONST_ARR( op )
 
+// For the VAL... macros, the function is the same as above except a copy is
+// taken so the internal state of the provided array is not altered an altered
+// copy is returned.
 #define VAL_OP_ARR_ARR( op )                                                 \
     template <typename T, std::size_t Size>                                  \
     inline constexpr std::array<T, Size> operator op(                        \
@@ -169,7 +196,7 @@ VAL_OP( * )
 VAL_OP( / )
 // clang-format on
 
-
+// Same as numpy.linspace in python
 template <typename T, std::size_t N, bool endpoint = true>
 constexpr std::array<T, N>
 linspace( const T a, const T b ) {
@@ -181,7 +208,7 @@ linspace( const T a, const T b ) {
     return arr;
 }
 
-// Simple std::array printer
+// Generates a string representation of a provided array
 template <typename T, std::size_t Size>
 std::string
 array_string( const std::array<T, Size> & a ) {
@@ -237,17 +264,22 @@ using state = std::array<T, Size>;
 template <typename T, std::size_t Size = 3>
 using flux = state<T, Size>;
 
+// -1 if ( x < 0 ), 1 if ( x > 0 ), 0 otherwise
 template <typename T>
 constexpr inline T
 sgn( const T x ) {
     return ( T( 0 ) < x ) - ( x < T( 0 ) );
 }
+// Size = 3 array version
 template <typename T>
 constexpr inline state<T>
 sgn( const state<T> & x ) {
     return state<T>{ sgn( x[0] ), sgn( x[1] ), sgn( x[2] ) };
 }
 
+// Attempt at applying the minmod algorithm for higher-order spatial
+// reconstruction in the HLL & HLLC method, doesn't work and im honestly too
+// tired to try fixing it It just shits the bed & numerically explodes
 template <typename T>
 constexpr state<T>
 slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
@@ -272,12 +304,12 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
     return slope;
 }
 
+// Self explanatory
 template <typename T, std::size_t Size>
 constexpr T
 pressure( const state<T, Size> & q, const T gamma ) {
     return ( gamma - 1 ) * ( q[2] - ( ( q[1] * q[1] ) / ( 2 * q[0] ) ) );
 }
-
 template <typename T, std::size_t Size>
 constexpr std::array<T, Size>
 pressure( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
@@ -285,6 +317,7 @@ pressure( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
     return ( gamma - 1 ) * ( q3 - ( ( q2 * q2 ) / ( 2 * q1 ) ) );
 }
 
+// Calculate flux of a state
 template <typename T, std::size_t Size>
 constexpr flux<T, Size>
 f( const state<T, Size> & q, const T gamma ) {
@@ -299,36 +332,38 @@ f( const state<T, Size> & q, const T gamma ) {
     return f;
 }
 
+// Fluid velocity of a state
 template <typename T>
 constexpr inline T
 v( const state<T> & q ) {
     return q[1] / q[0];
 }
-
 template <typename T, std::size_t Size>
 constexpr std::array<T, Size>
 v( const std::array<T, Size> & q1, const std::array<T, Size> & q2 ) {
     return q2 / q1;
 }
 
+// Speed of sound in a state
 template <typename T>
 constexpr inline T
 sound_speed( const state<T> & q, const T gamma ) {
     return std::sqrt( gamma * pressure( q, gamma ) / q[0] );
 }
 
+// Maximum wave speed of a state
 template <typename T>
 constexpr inline T
 max_wave_speed( const state<T> & q, const T gamma ) {
     return sound_speed( q, gamma ) + std::abs( q[1] / q[0] );
 }
 
+// Specific internal energy of a state, or each
 template <typename T>
 constexpr inline T
 e( const state<T> & q, const T gamma ) {
     return pressure( q, gamma ) / ( q[0] * ( gamma - 1 ) );
 }
-
 template <typename T, std::size_t Size>
 constexpr std::array<T, Size>
 e( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
@@ -336,6 +371,7 @@ e( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
     return pressure( q1, q2, q3, gamma ) / ( q1 * ( gamma - 1 ) );
 }
 
+// Construct an array of state<T> from 3 separate arrays: q1, q2, q3
 template <typename T, std::size_t Size>
 constexpr std::array<state<T>, Size>
 construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
@@ -349,7 +385,8 @@ construct_state( const std::array<T, Size> & q1, const std::array<T, Size> & q2,
     return state_array;
 }
 
-
+// Retrieves state i from the state array
+// Changes based on if approx_order::first or approx_order::second
 template <typename T, std::size_t Size,
           approx_order Order = approx_order::first,
           const bool   minus_half = true>
@@ -375,10 +412,15 @@ get_state( const std::array<state<T>, Size> & states, const std::size_t i,
     }
 }
 
+// typedef for the function structure used by the lax-friedrichs,
+// lax-wendroff, HLL, & HLLC methods. Allows them to be swapped out
+// easily in the body of the work loop in fluid_solver::d_state.
 template <typename T, std::size_t Size>
 using fluid_algorithm =
     std::function<flux<T>( const std::array<T, Size> &, const std::size_t,
                            const T, const T, const T )>;
+
+// Implementations of the 4 algorithms in use
 
 template <typename T, std::size_t Size>
 constexpr flux<T>
@@ -411,7 +453,7 @@ constexpr flux<T>
 hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
     //  L & R states
-    state<T> U_L{}, U_R{};
+    state<T> U_L, U_R;
     if constexpr ( Order == approx_order::first ) {
         U_L = states[i - 1];
         U_R = states[i];
@@ -577,8 +619,15 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
 }
 
 
+// Macro to determine the size of the state array
+// based on the number of cells required and the number
+// of ghost cells for a particular type of spatial reconstruction
+// In the minmod slop limiter detailed in the notes, F(i - 1/2) ends
+// up indexing Q( i - 2 ), therefore two ghost cells are required in
+// that case.
 #define ARRAY_SIZE( Size, Order ) \
-    ( Size ) + 2 * ( static_cast<std::size_t>( ( Order ) ) )
+    static_cast<std::size_t>(     \
+        ( Size ) + 2 * ( static_cast<std::size_t>( ( Order ) ) ) )
 
 
 // Fluid dynamics solver definition
@@ -589,6 +638,8 @@ template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
 class fluid_solver
 {
     public:
+    // Public constructors taking the x start & end points, & the
+    // initial state.
     fluid_solver( const T x_min, const T x_max,
                   const std::array<state<T>, Size> & initial_state ) :
         m_dx( ( x_max - x_min ) / ( incl_endpoint ? Size - 1 : Size ) ),
@@ -614,6 +665,8 @@ class fluid_solver
         apply_boundary_conditions();
     }
 
+    // Optional public function to reinitialize a solver with a
+    // new initial state
     void initialize_state(
         const T x_min, const T x_max,
         const std::array<state<T>, Size> & initial_state ) noexcept {
@@ -634,6 +687,14 @@ class fluid_solver
         initialize_state( x_min, x_max, initial_state );
     }
 
+    // Retrieval functions for the internal state of the object
+    // Primarily for debug purpose so they are not used here much
+    // q1, q2, q3 are used a few times, for example to output the
+    // correct properties to a .csv file
+    // [[nodiscard]] tells the compiler that it is a code smell if
+    // this function is called but it's output is unused so that a
+    // a warning or error can be emitted. Makes particular sense for
+    // functions like these.
     [[nodiscard]] constexpr auto & current_state() const noexcept {
         return m_state;
     }
@@ -664,11 +725,13 @@ class fluid_solver
     [[nodiscard]] constexpr auto dx() const noexcept { return m_dx; }
     [[nodiscard]] constexpr auto x() const noexcept { return m_x; }
 
+    // Declaration for simulate method
     constexpr auto simulate( const T endpoint, const T gamma,
                              const bool  save_endpoint = true,
                              std::string opt_id = "" ) noexcept;
 
     private:
+    // Declaration for
     [[nodiscard]] constexpr auto apply_boundary_conditions() noexcept;
     [[nodiscard]] constexpr std::array<state<T>, ARRAY_SIZE( Size, Order )>
     d_state( const std::array<state<T>, ARRAY_SIZE( Size, Order )> & states,
@@ -683,6 +746,7 @@ class fluid_solver
     std::array<T, Size>                             m_x;
 };
 
+// The simulate function runs the main time loop of the simulation
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
           boundary_type Rbc, approx_order Order, coordinate_type Coords,
           bool incl_endpoint>
@@ -694,6 +758,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
         opt_id += "_";
     }
 
+    // Lambda function to calculate the CFL condition
     const auto CFL_condition = [*this, &gamma]() {
         std::array<T, Size> s_max;
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
@@ -705,6 +770,9 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
 
     T time_step = CFL_condition();
     for ( T t{ 0 }; t <= endpoint; t += time_step ) {
+        // Determine whether to use 1st or 2nd order time reconstruction at
+        // compile time. 'constexpr' allows the compiler to reason about which
+        // branch should be compiled so there is no code branching at runtime.
         if constexpr ( Order == approx_order::first ) {
             m_state =
                 m_state + time_step * d_state( m_state, t, time_step, gamma );
@@ -717,6 +785,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
             m_state = m_state + 0.5 * ( K1 + K2 );
         }
 
+        // Add extra sources if coordinate system is 1D polar
         if constexpr ( Coords == coordinate_type::spherical ) {
             for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
                 auto &        Q{ m_state[i] };
@@ -730,11 +799,14 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
             }
         }
 
+        // Update m_previous_state, apply boundary conditions,
+        // & recalculate the CFL condition
         m_previous_state = m_state;
         apply_boundary_conditions();
         time_step = CFL_condition();
     }
 
+    // Save the output to a .csv file
     if ( save_endpoint ) {
         const auto Q1{ q1() };
         const auto Q2{ q2() };
@@ -752,12 +824,14 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
     return m_state;
 }
 
+// Applys boundary condition to current & previous state
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
           boundary_type Rbc, approx_order Order, coordinate_type Coords,
           bool incl_endpoint>
 [[nodiscard]] constexpr auto
 fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords,
              incl_endpoint>::apply_boundary_conditions() noexcept {
+    // Apply to the left hand side
     switch ( Lbc ) {
     case boundary_type::outflow: {
         std::for_each_n( m_state.begin(), m_offset,
@@ -779,6 +853,7 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords,
     } break;
     }
 
+    // Apply to the right hand side
     switch ( Rbc ) {
     case boundary_type::outflow: {
         std::for_each_n(
@@ -804,6 +879,8 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords,
     }
 }
 
+// d_state: Approximate the change in state in a time step
+// Returns the change for each state in the m_state array.
 template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
           boundary_type Rbc, approx_order Order, coordinate_type Coords,
           bool incl_endpoint>
@@ -811,14 +888,14 @@ template <typename T, std::size_t Size, solution_type Type, boundary_type Lbc,
 fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     const std::array<state<T>, ARRAY_SIZE( Size, Order )> & states,
     [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept {
-    fluid_algorithm<T, ARRAY_SIZE( Size, Order )>   f_half;
+    // Array to hold the change in state for the whole array
     std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
 
 #pragma omp parallel
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         // Debug statement to check for loop is actually
         // operating in parallel
-        std::cout << omp_get_thread_num() << std::endl;
+        // std::cout << omp_get_thread_num() << std::endl;
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
                        * ( lax_friedrichs( states, i, dt, m_dx, gamma )
@@ -850,6 +927,8 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
 
 int
 main() {
+    // Set up initial conditions for shocktube A
+
     std::array<double, 100>                               q1;
     std::array<double, std::tuple_size_v<decltype( q1 )>> q2;
     std::array<double, std::tuple_size_v<decltype( q1 )>> q3;
@@ -886,6 +965,8 @@ main() {
 
     auto initial_state = construct_state( q1, q2, q3 );
 
+    // Run simulations for shock-tube A
+
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
                  boundary_type::outflow, approx_order::second>
@@ -911,6 +992,7 @@ main() {
     fs_A_hllc.simulate( 0.2, gamma, true, "A" );
 
     // Set-up shocktube B:
+
     for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
         const double x = xmin + i * dx;
         if ( x < 0.8 ) {
@@ -932,6 +1014,8 @@ main() {
     }
 
     initial_state = construct_state( q1, q2, q3 );
+
+    // Run simulations for shock-tube B
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
@@ -958,6 +1042,7 @@ main() {
     fs_B_hllc.simulate( 0.012, gamma, true, "B" );
 
     // Set-up spherical shocktube:
+
     for ( std::size_t i{ 0 }; i < q1.size(); ++i ) {
         const double r{ xmin + i * dx };
 
@@ -980,6 +1065,8 @@ main() {
     }
 
     initial_state = construct_state( q1, q2, q3 );
+
+    // Run simulations for spherical shock-tube
 
     fluid_solver<double, std::tuple_size_v<decltype( q1 )>,
                  solution_type::lax_friedrichs, boundary_type::outflow,
