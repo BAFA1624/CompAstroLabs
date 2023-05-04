@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/u/q/ba556/Computing/gitrepos/CompAstroLabs/coursework3/24697.cpp
+algorithm
+-
+array
+-
+cassert
+-
+cmath
+-
+fstream
+-
+functional
+-
+iostream
+-
+omp.h
+-
+string
+-
+type_traits
+-
+utility
+-
+vector
+-
+
