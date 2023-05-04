@@ -5,6 +5,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <omp.h>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -28,14 +29,6 @@ const std::array<std::string, 4> solution_string{ "lax_friedrichs",
                                                   "hllc" };
 const std::array<std::string, 2> approx_string{ "first_order", "second_order" };
 
-<<<<<<< HEAD
-template <std::size_t Size, approx_order Order>
-using integral =
-    std::integral_constant<std::size_t,
-                           Size + static_cast<std::size_t>( Order )>;
-
-=======
->>>>>>> hand-in
 // Stringify things :)
 #define STR( s ) #s
 
@@ -259,31 +252,6 @@ template <typename T>
 constexpr state<T>
 slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
        const T dx, [[maybe_unused]] const T gamma ) {
-<<<<<<< HEAD
-    // Construct states of rho, v, & p
-    // clang-format off
-    /*const state<T> q1{
-        Q1[0],
-        Q1[1] / Q1[0],
-        ( gamma - 1 ) * ( Q1[2] - ( ( Q1[1] * Q1[1] ) / ( 2 * Q1[0] ) ) )
-    };
-    const state<T> q2{
-        Q2[0],
-        Q2[1] / Q2[0],
-        ( gamma - 1 ) * ( Q2[2] - ( ( Q2[1] * Q2[1] ) / ( 2 * Q2[0] ) ) )
-    };
-    const state<T> q3{
-        Q3[0],
-        Q3[1] / Q3[0],
-        ( gamma - 1 ) * ( Q3[2] - ( ( Q3[1] * Q3[1] ) / ( 2 * Q3[0] ) ) )
-    };*/
-    // clang-format on
-    // Calculate slope for rho, v, & p using monotonized central-difference
-    // limiter
-    /*const auto a{ ( q2 - q1 ) / dx }, b{ ( q3 - q2 ) / dx },
-        c{ ( q3 - q1 ) / dx };*/
-=======
->>>>>>> hand-in
     const auto a{ ( Q2 - Q1 ) / dx }, b{ ( Q3 - Q2 ) / dx },
         c{ ( Q3 - Q1 ) / dx };
     const state<T> sgn_a{ sgn( a ) };
@@ -301,14 +269,6 @@ slope( const state<T> & Q1, const state<T> & Q2, const state<T> & Q3,
         }
     };
     // clang-format on
-<<<<<<< HEAD
-
-    // Convert back to rho, rho * v, E
-    /*return state<T>{ slope[0], slope[0] * slope[1],
-                     ( slope[2] / ( gamma - 1 ) )
-                         - 0.5 * slope[0] * slope[1] * slope[1] };*/
-=======
->>>>>>> hand-in
     return slope;
 }
 
@@ -396,8 +356,6 @@ template <typename T, std::size_t Size,
 constexpr inline state<T>
 get_state( const std::array<state<T>, Size> & states, const std::size_t i,
            const T dx, const T gamma ) {
-    // std::cout << "get_state: " << i - 1 << " " << i << " " << i + 1
-    //           << std::endl;
     if ( Order == approx_order::second ) {
         if constexpr ( minus_half ) {
             return states[i]
@@ -428,10 +386,10 @@ lax_friedrichs( const std::array<state<T>, Size> & state, const std::size_t i,
                 const T dt, const T dx, const T gamma ) {
     const auto f_i{ f( state[i], gamma ) }, f_i_1{ f( state[i + 1], gamma ) };
     // clang-format off
-                const flux<T> f{
-                    0.5 * (f_i + f_i_1 )
-                    + 0.5 * ( dx / dt ) * ( state[i] - state[i + 1] )
-                };
+    const flux<T> f{
+        0.5 * (f_i + f_i_1 )
+        + 0.5 * ( dx / dt ) * ( state[i] - state[i + 1] )
+    };
     // clang-format on
     return f;
 }
@@ -452,7 +410,6 @@ template <typename T, std::size_t Size,
 constexpr flux<T>
 hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
-    // std::cout << "hll: " << i << std::endl;
     //  L & R states
     state<T> U_L, U_R;
     if constexpr ( Order == approx_order::first ) {
@@ -461,34 +418,26 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
     else {
         if constexpr ( minus_half ) {
-            // std::cout << "minus_half" << std::endl;
             U_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
             U_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
         }
         else {
-            // std::cout << "plus_half" << std::endl;
             U_L = get_state<T, Size, Order, false>( states, i, dx, gamma );
             U_R = get_state<T, Size, Order, true>( states, i + 1, dx, gamma );
         }
     }
 
-    // std::cout << "U: " << array_string( U_L ) << " " << array_string( U_R )
-    //<< std::endl;
-
     // L & R velocities
     const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
-    // std::cout << "v " << v_L << " " << v_R << std::endl;
 
     // L & R sound speed
     const auto c_L{ sound_speed( U_L, gamma ) },
         c_R{ sound_speed( U_R, gamma ) };
-    // std::cout << "c: " << c_L << " " << c_R << std::endl;
     //  L, R, & * pressure
     const auto p_L{ pressure( U_L, gamma ) }, p_R{ pressure( U_R, gamma ) };
     const auto p_star{ 0.5 * ( p_L + p_R )
                        - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
                              * ( c_R - c_L ) };
-    // std::cout << "p: " << p_L << " " << p_star << " " << p_R << std::endl;
     //  L & R q
     const auto q_L{ p_star <= p_L ?
                         1 :
@@ -500,10 +449,8 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
                         std::sqrt( 1
                                    + ( gamma + 1 ) * ( ( p_star / p_R ) - 1 )
                                          / ( 2 * gamma ) ) };
-    // std::cout << "q " << q_L << " " << q_R << std::endl;
     //  L & R wavespeeds
     const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
-    // std::cout << "S: " << S_L << " " << S_R << std::endl;
 
     const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
     // L, R & HLL fluxes
@@ -519,7 +466,6 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
     else {
         std::cout << "ERROR: Invalid branch reached." << std::endl;
-        // assert( false );
         return flux<T>{ 0., 0., 0. };
     }
 }
@@ -554,17 +500,17 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
     // L, R, & * pressure
     const auto p_L{ pressure( Q_L, gamma ) }, p_R{ pressure( Q_R, gamma ) };
     // clang-format off
-                // exponent z
-                const T z = ( gamma - 1 ) / ( 2 * gamma );
-                // p_star according to paper
-                const auto p_star{
-                    std::pow(
-                        (c_L + c_R - 0.5 * (gamma - 1) * (v_R - v_L))
-                        /
-                        ((c_L / std::pow(pressure(Q_L, gamma), z)) + (c_R / std::pow(pressure(Q_R, gamma), z))),
-                        1 / z
-                    )
-                };
+    // exponent z
+    const T z = ( gamma - 1 ) / ( 2 * gamma );
+    // p_star according to paper
+    const auto p_star{
+        std::pow(
+            (c_L + c_R - 0.5 * (gamma - 1) * (v_R - v_L))
+            /
+            ((c_L / std::pow(pressure(Q_L, gamma), z)) + (c_R / std::pow(pressure(Q_R, gamma), z))),
+            1 / z
+        )
+    };
     // clang-format on
     // L & R q
     const auto q_L{ p_star <= p_L ?
@@ -759,25 +705,11 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::simulate(
 
     T time_step = CFL_condition();
     for ( T t{ 0 }; t <= endpoint; t += time_step ) {
-<<<<<<< HEAD
-        if constexpr ( Order == approx_order::first ) {
-            m_state =
-                m_state + time_step * d_state( m_state, t, time_step, gamma );
-        }
-        else {
-            const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
-            const auto K2 =
-                time_step
-                * d_state( m_state + K1, t + time_step, time_step, gamma );
-            m_state = m_state + 0.5 * ( K1 + K2 );
-        }
-=======
         const auto K1 = time_step * d_state( m_state, t, time_step, gamma );
         const auto K2 =
             time_step
             * d_state( m_state + K1, t + time_step, time_step, gamma );
         m_state = m_state + 0.5 * ( K1 + K2 );
->>>>>>> hand-in
 
         if constexpr ( Coords == coordinate_type::spherical ) {
             for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
@@ -875,7 +807,12 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept {
     fluid_algorithm<T, ARRAY_SIZE( Size, Order )>   f_half;
     std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
+
+#pragma omp parallel
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
+        // Debug statement to check for loop is actually
+        // operating in parallel
+        // std::cout << omp_get_thread_num() << std::endl;
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
                        * ( lax_friedrichs( states, i, dt, m_dx, gamma )

@@ -28,10 +28,7 @@ gamma = 1.4
 
 figA = plt.figure(figsize=(8, 8))
 grid = gs.GridSpec(2, 2)
-<<<<<<< HEAD
-=======
 figA.suptitle("Shocktube A")
->>>>>>> hand-in
 ax1 = figA.add_subplot(grid[0, 0])
 ax2 = figA.add_subplot(grid[0, 1])
 ax3 = figA.add_subplot(grid[1, 0])
@@ -71,10 +68,7 @@ plt.savefig("shocktube_A.png")
 # Shocktube spherical:
 
 figB = plt.figure(figsize=(8, 8))
-<<<<<<< HEAD
-=======
 figB.suptitle('Shocktube B')
->>>>>>> hand-in
 ax1 = figB.add_subplot(grid[0, 0])
 ax2 = figB.add_subplot(grid[0, 1])
 ax3 = figB.add_subplot(grid[1, 0])
@@ -118,10 +112,7 @@ def e(rho, p, gamma):
 
 
 figS = plt.figure(figsize=(8, 8))
-<<<<<<< HEAD
-=======
 figS.suptitle('Spherical Shocktube')
->>>>>>> hand-in
 ax1 = figS.add_subplot(grid[0, 0])
 ax2 = figS.add_subplot(grid[0, 1])
 ax3 = figS.add_subplot(grid[1, 0])

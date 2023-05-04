@@ -24,7 +24,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 15,
+				"line" : 16,
 				"parent" : 0
 			}
 		]
@@ -35,7 +35,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-Wall -Wextra -pedantic -O0 -fstack-protector-all -ggdb -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk"
+					"fragment" : "-Wall -Wextra -pedantic -O0 -fopenmp -fstack-protector-all -ggdb -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk"
 				}
 			],
 			"language" : "CXX",
@@ -59,7 +59,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-Wall -Wextra -pedantic -O0 -fstack-protector-all -ggdb",
+				"fragment" : "-Wall -Wextra -pedantic -O0 -fopenmp -fstack-protector-all -ggdb",
 				"role" : "flags"
 			},
 			{

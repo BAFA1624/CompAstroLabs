@@ -68,7 +68,7 @@
 						"c++"
 					]
 				},
-				"path" : "clang++",
+				"path" : "g++-12",
 				"version" : "14.0.3.14030022"
 			},
 			"language" : "CXX",
