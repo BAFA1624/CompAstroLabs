@@ -704,21 +704,21 @@ class fluid_solver
     [[nodiscard]] constexpr auto q1() const noexcept {
         std::array<T, Size> q1_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
-            q1_array[i] = m_state[i + 1][0];
+            q1_array[i] = m_state[i + m_offset][0];
         }
         return q1_array;
     }
     [[nodiscard]] constexpr auto q2() const noexcept {
         std::array<T, Size> q2_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
-            q2_array[i] = m_state[i + 1][1];
+            q2_array[i] = m_state[i + m_offset][1];
         }
         return q2_array;
     }
     [[nodiscard]] constexpr auto q3() const noexcept {
         std::array<T, Size> q3_array{};
         for ( std::size_t i{ 0 }; i < Size; ++i ) {
-            q3_array[i] = m_state[i + 1][2];
+            q3_array[i] = m_state[i + m_offset][2];
         }
         return q3_array;
     }
