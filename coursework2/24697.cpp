@@ -3,9 +3,19 @@
 #include <cassert>
 #include <cmath>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 #include <concepts>
 >>>>>>> coursework3_array
+=======
+#include <concepts>
+=======
+<<<<<<< HEAD
+=======
+#include <concepts>
+>>>>>>> coursework3_array
+>>>>>>> hand-in
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
 #include <fstream>
 #include <functional>
 #include <initializer_list>

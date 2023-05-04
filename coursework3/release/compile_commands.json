@@ -1,7 +1,11 @@
 [
 {
   "directory": "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/release",
+<<<<<<< HEAD
   "command": "clang++   -Wall -Wextra -pedantic -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk -o CMakeFiles/24697.dir/24697.cpp.o -c /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp",
+=======
+  "command": "g++-12   -Wall -Wextra -pedantic -fopenmp -O3 -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk -o CMakeFiles/24697.dir/24697.cpp.o -c /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp",
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
   "file": "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp",
   "output": "CMakeFiles/24697.dir/24697.cpp.o"
 }

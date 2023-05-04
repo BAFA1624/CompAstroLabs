@@ -51,7 +51,11 @@ build cmake_object_order_depends_target_24697: phony || CMakeFiles/24697.dir
 
 build CMakeFiles/24697.dir/24697.cpp.o: CXX_COMPILER__24697_unscanned_Debug /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp || cmake_object_order_depends_target_24697
   DEP_FILE = CMakeFiles/24697.dir/24697.cpp.o.d
+<<<<<<< HEAD
   FLAGS = -Wall -Wextra -pedantic -O0 -fstack-protector-all -ggdb -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk
+=======
+  FLAGS = -Wall -Wextra -pedantic -O0 -fopenmp -fstack-protector-all -ggdb -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
   OBJECT_DIR = CMakeFiles/24697.dir
   OBJECT_FILE_DIR = CMakeFiles/24697.dir
 
@@ -64,7 +68,11 @@ build CMakeFiles/24697.dir/24697.cpp.o: CXX_COMPILER__24697_unscanned_Debug /Use
 # Link the executable 24697
 
 build 24697: CXX_EXECUTABLE_LINKER__24697_Debug CMakeFiles/24697.dir/24697.cpp.o
+<<<<<<< HEAD
   FLAGS = -Wall -Wextra -pedantic -O0 -fstack-protector-all -ggdb -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk
+=======
+  FLAGS = -Wall -Wextra -pedantic -O0 -fopenmp -fstack-protector-all -ggdb -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
   LINK_FLAGS = -L/opt/homebrew/opt/sqlite/lib -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/openssl@3/lib
   OBJECT_DIR = CMakeFiles/24697.dir
   POST_BUILD = :
