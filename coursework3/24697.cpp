@@ -432,26 +432,42 @@ using fluid_algorithm =
     std::function<flux<T>( const std::array<T, Size> &, const std::size_t,
                            const T, const T, const T )>;
 
-template <typename T, std::size_t Size>
+template <typename T, std::size_t Size, approx_order Order>
 constexpr flux<T>
-lax_friedrichs( const std::array<state<T>, Size> & state, const std::size_t i,
+lax_friedrichs( const std::array<state<T>, Size> & states, const std::size_t i,
                 const T dt, const T dx, const T gamma ) {
-    const auto f_i{ f( state[i], gamma ) }, f_i_1{ f( state[i + 1], gamma ) };
+    state<T> Q_i{}, Q_i_1{};
+    if ( Order == approx_order::first ) {
+        Q_i = states[i];
+        Q_i_1 = states[i + 1];
+    }
+    else {
+        Q_i = get_state( states, i, dx, gamma );
+        Q_i_1 = get_state( states, i + 1, dx, gamma );
+    }
+    const auto f_i{ f( Q_i, gamma ) }, f_i_1{ f( Q_i_1, gamma ) };
     // clang-format off
                 const flux<T> f{
                     0.5 * (f_i + f_i_1 )
-                    + 0.5 * ( dx / dt ) * ( state[i] - state[i + 1] )
+                    + 0.5 * ( dx / dt ) * ( Q_i - Q_i_1 )
                 };
     // clang-format on
     return f;
 }
 
-template <typename T, std::size_t Size>
+template <typename T, std::size_t Size, approx_order Order>
 constexpr flux<T>
-lax_wendroff( const std::array<state<T>, Size> & state, const std::size_t i,
+lax_wendroff( const std::array<state<T>, Size> & states, const std::size_t i,
               const T dt, const T dx, const T gamma ) {
-    const auto & q{ state[i] };
-    const auto & q_1{ state[i + 1] };
+    state<T> q{}, q_1{};
+    if constexpr ( Order == approx_order::first ) {
+        q = states[i];
+        q_1 = states[i + 1];
+    }
+    else {
+        q = get_state( states, i, dx, gamma );
+        q_1 = get_state( states, i + 1, dx, gamma );
+    }
     return f( 0.5 * ( q + q_1 )
                   + 0.5 * ( dt / dx ) * ( f( q, gamma ) - f( q_1, gamma ) ),
               gamma );
@@ -885,14 +901,19 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         if constexpr ( Type == solution_type::lax_friedrichs ) {
-            delta[i] = -( 1 / m_dx )
-                       * ( lax_friedrichs( states, i, dt, m_dx, gamma )
-                           - lax_friedrichs( states, i - 1, dt, m_dx, gamma ) );
+            delta[i] =
+                -( 1 / m_dx )
+                * ( lax_friedrichs<T, ARRAY_SIZE( Size, Order ), Order>(
+                        states, i, dt, m_dx, gamma )
+                    - lax_friedrichs<T, ARRAY_SIZE( Size, Order ), Order>(
+                        states, i - 1, dt, m_dx, gamma ) );
         }
         else if constexpr ( Type == solution_type::lax_wendroff ) {
             delta[i] = -( 1 / m_dx )
-                       * ( lax_wendroff( states, i, dt, m_dx, gamma )
-                           - lax_wendroff( states, i - 1, dt, m_dx, gamma ) );
+                       * ( lax_wendroff<T, ARRAY_SIZE( Size, Order ), Order>(
+                               states, i, dt, m_dx, gamma )
+                           - lax_wendroff<T, ARRAY_SIZE( Size, Order ), Order>(
+                               states, i - 1, dt, m_dx, gamma ) );
         }
         else if constexpr ( Type == solution_type::hll ) {
             delta[i] = -( 1 / m_dx )

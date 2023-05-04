@@ -129,16 +129,17 @@ for filename in os.listdir():
     if pattern.match(filename):
         sim_type = re.findall(pattern, filename)[0]
         print(f"Plotting: {filename} - {sim_type}")
-        df = pd.read_csv(filename)
-        pl = ax1.plot(df['x'], df['d'], ls='-',
-                      linewidth=1, label=sim_type)[0]
-        color = pl.get_color()
-        ax2.plot(df['x'], df['v'], c=color, ls='-',
-                 linewidth=1, label=sim_type)
-        ax3.plot(df['x'], df['p'], c=color, ls='-',
-                 linewidth=1, label=sim_type)
-        ax4.plot(df['x'], df['e'], c=color, ls='-',
-                 linewidth=1, label=sim_type)
+        if sim_type != "hllc_second_order":
+            df = pd.read_csv(filename)
+            pl = ax1.plot(df['x'], df['d'], ls='-',
+                          linewidth=1, label=sim_type)[0]
+            color = pl.get_color()
+            ax2.plot(df['x'], df['v'], c=color, ls='-',
+                     linewidth=1, label=sim_type)
+            ax3.plot(df['x'], df['p'], c=color, ls='-',
+                     linewidth=1, label=sim_type)
+            ax4.plot(df['x'], df['e'], c=color, ls='-',
+                     linewidth=1, label=sim_type)
         if delete_files:
             os.remove(filename)
 ax3.legend(loc='best')
