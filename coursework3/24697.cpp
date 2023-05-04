@@ -411,7 +411,7 @@ constexpr flux<T>
 hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
     //  L & R states
-    state<T> U_L, U_R;
+    state<T> U_L{}, U_R{};
     if constexpr ( Order == approx_order::first ) {
         U_L = states[i - 1];
         U_R = states[i];
