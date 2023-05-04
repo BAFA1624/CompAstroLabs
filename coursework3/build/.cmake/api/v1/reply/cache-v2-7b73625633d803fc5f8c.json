@@ -2,6 +2,42 @@
 	"entries" : 
 	[
 		{
+			"name" : "24697_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/build"
+		},
+		{
+			"name" : "24697_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "24697_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3"
+		},
+		{
 			"name" : "CMAKE_ADDR2LINE",
 			"properties" : 
 			[
@@ -819,7 +855,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "LAB6"
+			"value" : "24697"
 		},
 		{
 			"name" : "CMAKE_RANLIB",

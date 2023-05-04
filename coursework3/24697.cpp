@@ -5,10 +5,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-<<<<<<< HEAD
-=======
 #include <omp.h>
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -359,11 +356,6 @@ template <typename T, std::size_t Size,
 constexpr inline state<T>
 get_state( const std::array<state<T>, Size> & states, const std::size_t i,
            const T dx, const T gamma ) {
-<<<<<<< HEAD
-    // std::cout << "get_state: " << i - 1 << " " << i << " " << i + 1
-    //           << std::endl;
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
     if ( Order == approx_order::second ) {
         if constexpr ( minus_half ) {
             return states[i]
@@ -394,17 +386,10 @@ lax_friedrichs( const std::array<state<T>, Size> & state, const std::size_t i,
                 const T dt, const T dx, const T gamma ) {
     const auto f_i{ f( state[i], gamma ) }, f_i_1{ f( state[i + 1], gamma ) };
     // clang-format off
-<<<<<<< HEAD
-                const flux<T> f{
-                    0.5 * (f_i + f_i_1 )
-                    + 0.5 * ( dx / dt ) * ( state[i] - state[i + 1] )
-                };
-=======
     const flux<T> f{
         0.5 * (f_i + f_i_1 )
         + 0.5 * ( dx / dt ) * ( state[i] - state[i + 1] )
     };
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
     // clang-format on
     return f;
 }
@@ -425,10 +410,6 @@ template <typename T, std::size_t Size,
 constexpr flux<T>
 hll( const std::array<state<T>, Size> & states, const std::size_t i,
      [[maybe_unused]] const T dt, [[maybe_unused]] const T dx, const T gamma ) {
-<<<<<<< HEAD
-    // std::cout << "hll: " << i << std::endl;
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
     //  L & R states
     state<T> U_L, U_R;
     if constexpr ( Order == approx_order::first ) {
@@ -437,51 +418,26 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
     else {
         if constexpr ( minus_half ) {
-<<<<<<< HEAD
-            // std::cout << "minus_half" << std::endl;
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
             U_L = get_state<T, Size, Order, false>( states, i - 1, dx, gamma );
             U_R = get_state<T, Size, Order, true>( states, i, dx, gamma );
         }
         else {
-<<<<<<< HEAD
-            // std::cout << "plus_half" << std::endl;
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
             U_L = get_state<T, Size, Order, false>( states, i, dx, gamma );
             U_R = get_state<T, Size, Order, true>( states, i + 1, dx, gamma );
         }
     }
 
-<<<<<<< HEAD
-    // std::cout << "U: " << array_string( U_L ) << " " << array_string( U_R )
-    //<< std::endl;
-
     // L & R velocities
     const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
-    // std::cout << "v " << v_L << " " << v_R << std::endl;
-=======
-    // L & R velocities
-    const auto v_L{ v( U_L ) }, v_R{ v( U_R ) };
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
 
     // L & R sound speed
     const auto c_L{ sound_speed( U_L, gamma ) },
         c_R{ sound_speed( U_R, gamma ) };
-<<<<<<< HEAD
-    // std::cout << "c: " << c_L << " " << c_R << std::endl;
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
     //  L, R, & * pressure
     const auto p_L{ pressure( U_L, gamma ) }, p_R{ pressure( U_R, gamma ) };
     const auto p_star{ 0.5 * ( p_L + p_R )
                        - 0.125 * ( v_R - v_L ) * ( U_R[0] - U_L[0] )
                              * ( c_R - c_L ) };
-<<<<<<< HEAD
-    // std::cout << "p: " << p_L << " " << p_star << " " << p_R << std::endl;
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
     //  L & R q
     const auto q_L{ p_star <= p_L ?
                         1 :
@@ -493,15 +449,8 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
                         std::sqrt( 1
                                    + ( gamma + 1 ) * ( ( p_star / p_R ) - 1 )
                                          / ( 2 * gamma ) ) };
-<<<<<<< HEAD
-    // std::cout << "q " << q_L << " " << q_R << std::endl;
     //  L & R wavespeeds
     const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
-    // std::cout << "S: " << S_L << " " << S_R << std::endl;
-=======
-    //  L & R wavespeeds
-    const auto S_L{ v_L - c_L * q_L }, S_R{ v_R + c_R * q_R };
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
 
     const auto F_L{ f( U_L, gamma ) }, F_R{ f( U_R, gamma ) };
     // L, R & HLL fluxes
@@ -517,10 +466,6 @@ hll( const std::array<state<T>, Size> & states, const std::size_t i,
     }
     else {
         std::cout << "ERROR: Invalid branch reached." << std::endl;
-<<<<<<< HEAD
-        // assert( false );
-=======
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
         return flux<T>{ 0., 0., 0. };
     }
 }
@@ -555,19 +500,6 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
     // L, R, & * pressure
     const auto p_L{ pressure( Q_L, gamma ) }, p_R{ pressure( Q_R, gamma ) };
     // clang-format off
-<<<<<<< HEAD
-                // exponent z
-                const T z = ( gamma - 1 ) / ( 2 * gamma );
-                // p_star according to paper
-                const auto p_star{
-                    std::pow(
-                        (c_L + c_R - 0.5 * (gamma - 1) * (v_R - v_L))
-                        /
-                        ((c_L / std::pow(pressure(Q_L, gamma), z)) + (c_R / std::pow(pressure(Q_R, gamma), z))),
-                        1 / z
-                    )
-                };
-=======
     // exponent z
     const T z = ( gamma - 1 ) / ( 2 * gamma );
     // p_star according to paper
@@ -579,7 +511,6 @@ hllc( const std::array<state<T>, Size> & states, const std::size_t i,
             1 / z
         )
     };
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
     // clang-format on
     // L & R q
     const auto q_L{ p_star <= p_L ?
@@ -876,16 +807,12 @@ fluid_solver<T, Size, Type, Lbc, Rbc, Order, Coords, incl_endpoint>::d_state(
     [[maybe_unused]] const T t, const T dt, const T gamma ) noexcept {
     fluid_algorithm<T, ARRAY_SIZE( Size, Order )>   f_half;
     std::array<state<T>, ARRAY_SIZE( Size, Order )> delta{};
-<<<<<<< HEAD
-    for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
-=======
 
 #pragma omp parallel
     for ( std::size_t i{ m_offset }; i < Size + m_offset; ++i ) {
         // Debug statement to check for loop is actually
         // operating in parallel
         // std::cout << omp_get_thread_num() << std::endl;
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
         if constexpr ( Type == solution_type::lax_friedrichs ) {
             delta[i] = -( 1 / m_dx )
                        * ( lax_friedrichs( states, i, dt, m_dx, gamma )

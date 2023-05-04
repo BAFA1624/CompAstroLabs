@@ -73,17 +73,6 @@ CMakeFiles/24697.dir/24697.cpp.o: CMakeFiles/24697.dir/flags.make
 CMakeFiles/24697.dir/24697.cpp.o: /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp
 CMakeFiles/24697.dir/24697.cpp.o: CMakeFiles/24697.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/24697.dir/24697.cpp.o"
-<<<<<<< HEAD
-	clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/24697.dir/24697.cpp.o -MF CMakeFiles/24697.dir/24697.cpp.o.d -o CMakeFiles/24697.dir/24697.cpp.o -c /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp
-
-CMakeFiles/24697.dir/24697.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/24697.dir/24697.cpp.i"
-	clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp > CMakeFiles/24697.dir/24697.cpp.i
-
-CMakeFiles/24697.dir/24697.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/24697.dir/24697.cpp.s"
-	clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp -o CMakeFiles/24697.dir/24697.cpp.s
-=======
 	g++-12 $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/24697.dir/24697.cpp.o -MF CMakeFiles/24697.dir/24697.cpp.o.d -o CMakeFiles/24697.dir/24697.cpp.o -c /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp
 
 CMakeFiles/24697.dir/24697.cpp.i: cmake_force
@@ -93,7 +82,6 @@ CMakeFiles/24697.dir/24697.cpp.i: cmake_force
 CMakeFiles/24697.dir/24697.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/24697.dir/24697.cpp.s"
 	g++-12 $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/24697.cpp -o CMakeFiles/24697.dir/24697.cpp.s
->>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
 
 # Object files for target 24697
 24697_OBJECTS = \
