@@ -14,6 +14,15 @@
 # EXTERNAL cache entries
 ########################
 
+//Value Computed by CMake
+24697_BINARY_DIR:STATIC=/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3/build
+
+//Value Computed by CMake
+24697_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+24697_SOURCE_DIR:STATIC=/Users/ben/Documents/gitrepos.nosync/CompAstroLabs/coursework3
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=CMAKE_ADDR2LINE-NOTFOUND
 
@@ -142,7 +151,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=LAB6
+CMAKE_PROJECT_NAME:STATIC=24697
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib

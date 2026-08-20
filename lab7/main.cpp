@@ -1,3 +1,24 @@
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+<<<<<<< HEAD
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
+#include <functional>
+#include <iostream>
+
+template <typename T>
+using Numeric = Concept;
+
+/*deriv_fda( const std::functio ){}*/
+
+int
+main() {}
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> hand-in
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
 #include <algorithm>
 #include <cmath>
 #include <concepts>
@@ -476,4 +497,14 @@ main() {
                     simulation_type::lax_friedrichs>
         lax_friedrichs_fs( xmin, xmax, init_q, init_v );
     lax_friedrichs_fs.simulate( end_time, dt, n_saves );
+<<<<<<< HEAD
 }
+>>>>>>> coursework3_array
+=======
+<<<<<<< HEAD
+}
+=======
+}
+>>>>>>> coursework3_array
+>>>>>>> hand-in
+>>>>>>> 39ae558f7f62c32f1ca7af80926efdfff52340ec
